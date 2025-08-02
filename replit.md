@@ -1,6 +1,6 @@
 # Overview
 
-This is a full-stack web application built with React and Express that provides dual authentication methods: traditional email/password authentication and OAuth integration with Replit. The application features a modern, responsive UI built with shadcn/ui components and Tailwind CSS, backed by a PostgreSQL database with Drizzle ORM for type-safe database operations.
+This is a single-page authentication system built with React and Express that provides dual authentication methods: traditional email/password authentication and Google OAuth integration. The application features a modern, responsive UI built with shadcn/ui components and Tailwind CSS, with MySQL database integration and fallback to in-memory storage for development.
 
 # User Preferences
 
@@ -13,7 +13,7 @@ Preferred communication style: Simple, everyday language.
 - **UI Library**: shadcn/ui components built on Radix UI primitives for accessibility
 - **Styling**: Tailwind CSS with custom CSS variables for theming support
 - **State Management**: TanStack Query (React Query) for server state management
-- **Routing**: Wouter for lightweight client-side routing
+- **Application Structure**: Single-page application with conditional rendering based on authentication state
 - **Form Handling**: React Hook Form with Zod validation for type-safe form validation
 
 ## Backend Architecture
@@ -24,9 +24,9 @@ Preferred communication style: Simple, everyday language.
 - **Password Security**: bcrypt for password hashing and validation
 
 ## Database Architecture
-- **Database**: PostgreSQL with Neon serverless driver
-- **ORM**: Drizzle ORM for type-safe database operations
-- **Schema Management**: Drizzle Kit for migrations and schema management
+- **Database**: MySQL with fallback to in-memory storage for development
+- **ORM**: Drizzle ORM for type-safe database operations  
+- **Schema Management**: Direct SQL table creation with auto-migration
 - **Tables**: Users table with support for both OAuth and email/password authentication, sessions table for session storage
 
 ## Authentication & Authorization
