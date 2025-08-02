@@ -12,7 +12,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Session storage table for MySQL
+// Session storage table for MySQL  
 export const sessions = mysqlTable(
   "sessions",
   {

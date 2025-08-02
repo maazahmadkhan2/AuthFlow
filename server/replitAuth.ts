@@ -5,7 +5,7 @@ import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
-import connectPg from "connect-pg-simple";
+import MySQLStore from "express-mysql-session";
 import { storage } from "./storage";
 
 if (!process.env.REPLIT_DOMAINS) {
@@ -24,21 +24,72 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
+  
+  // Configure MySQL session store
+  let sessionStore;
+  
+  try {
+    if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('mysql://')) {
+      // Parse MySQL URL
+      const url = new URL(process.env.DATABASE_URL);
+      const options = {
+        host: url.hostname,
+        port: parseInt(url.port) || 3306,
+        user: url.username,
+        password: url.password,
+        database: url.pathname.slice(1),
+        createDatabaseTable: true,
+        schema: {
+          tableName: 'sessions',
+          columnNames: {
+            session_id: 'sid',
+            expires: 'expire',
+            data: 'sess'
+          }
+        }
+      };
+      
+      const MySQLStoreSession = MySQLStore(session);
+      sessionStore = new MySQLStoreSession(options);
+    } else {
+      // Fallback to default MySQL connection
+      const options = {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '3306'),
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'authflow',
+        createDatabaseTable: true,
+        schema: {
+          tableName: 'sessions',
+          columnNames: {
+            session_id: 'sid',
+            expires: 'expire',
+            data: 'sess'
+          }
+        }
+      };
+      
+      const MySQLStoreSession = MySQLStore(session);
+      sessionStore = new MySQLStoreSession(options);
+    }
+  } catch (error) {
+    console.log('MySQL session store not available, using memory store');
+    // Fallback to memory store for development
+    const MemoryStore = require('memorystore')(session);
+    sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
+  }
+  
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       maxAge: sessionTtl,
     },
   });
