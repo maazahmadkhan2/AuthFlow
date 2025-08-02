@@ -1,6 +1,6 @@
 # Overview
 
-This is a single-page authentication system built with React and Express that provides dual authentication methods: traditional email/password authentication and Google OAuth integration. The application features a modern, responsive UI built with shadcn/ui components and Tailwind CSS, with MySQL database integration and fallback to in-memory storage for development.
+This is a single-page authentication system built with React that uses Firebase for authentication. The application provides email/password registration/login and Google OAuth sign-in. It features a modern, responsive UI built with shadcn/ui components and Tailwind CSS. The backend includes MySQL database integration with fallback to in-memory storage for development, primarily used for session management and additional user data storage.
 
 # User Preferences
 

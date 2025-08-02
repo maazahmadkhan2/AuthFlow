@@ -1,5 +1,15 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithRedirect, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "firebase/auth";
+import { 
+  getAuth, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut, 
+  onAuthStateChanged,
+  updateProfile,
+  User
+} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -18,22 +28,45 @@ export const auth = getAuth(app);
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
 
-// Auth functions
-export const signInWithGoogle = async (usePopup = true) => {
+// Email/Password Authentication
+export const signUpWithEmail = async (email: string, password: string, firstName: string, lastName: string) => {
   try {
-    if (usePopup) {
-      const result = await signInWithPopup(auth, googleProvider);
-      return result.user;
-    } else {
-      await signInWithRedirect(auth, googleProvider);
-      return null; // User will be redirected
-    }
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    
+    // Update user profile with name
+    await updateProfile(result.user, {
+      displayName: `${firstName} ${lastName}`
+    });
+    
+    return result.user;
+  } catch (error) {
+    console.error("Error creating account:", error);
+    throw error;
+  }
+};
+
+export const signInWithEmail = async (email: string, password: string) => {
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    return result.user;
+  } catch (error) {
+    console.error("Error signing in:", error);
+    throw error;
+  }
+};
+
+// Google Authentication
+export const signInWithGoogle = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
   } catch (error) {
     console.error("Error signing in with Google:", error);
     throw error;
   }
 };
 
+// Sign out
 export const signOutUser = async () => {
   try {
     await signOut(auth);
@@ -43,7 +76,8 @@ export const signOutUser = async () => {
   }
 };
 
-export const onAuthStateChange = (callback: (user: any) => void) => {
+// Auth state observer
+export const onAuthStateChange = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, callback);
 };
 
