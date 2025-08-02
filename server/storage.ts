@@ -7,6 +7,10 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
+// Simple in-memory storage for when MySQL is not available
+let memoryUsers: User[] = [];
+let nextId = 1;
+
 // Interface for storage operations
 export interface IStorage {
   // User operations
@@ -29,26 +33,72 @@ export class DatabaseStorage implements IStorage {
   // (IMPORTANT) these user operations are mandatory for Replit Auth.
 
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    if (!db) {
+      // Use memory storage
+      return memoryUsers.find(u => u.id.toString() === id);
+    }
+    
+    const [user] = await db.select().from(users).where(eq(users.id, parseInt(id)));
     return user;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
+    if (!db) {
+      // Use memory storage
+      const existingUser = userData.email ? memoryUsers.find(u => u.email === userData.email) : null;
+      
+      if (existingUser) {
+        // Update existing user
+        Object.assign(existingUser, userData, { updatedAt: new Date() });
+        return existingUser;
+      } else {
+        // Create new user
+        const newUser: User = {
+          id: nextId++,
+          email: userData.email || null,
+          firstName: userData.firstName || null,
+          lastName: userData.lastName || null,
+          profileImageUrl: userData.profileImageUrl || null,
+          password: userData.password || null,
+          emailVerified: userData.emailVerified || false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        memoryUsers.push(newUser);
+        return newUser;
+      }
+    }
+
+    // Database storage
+    const existingUser = userData.email ? await this.getUserByEmail(userData.email) : null;
+    
+    if (existingUser) {
+      // Update existing user
+      const [user] = await db
+        .update(users)
+        .set({
           ...userData,
           updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
+        })
+        .where(eq(users.id, existingUser.id))
+        .returning();
+      return user;
+    } else {
+      // Insert new user
+      const [user] = await db
+        .insert(users)
+        .values(userData)
+        .returning();
+      return user;
+    }
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
+    if (!db) {
+      // Use memory storage
+      return memoryUsers.find(u => u.email === email);
+    }
+    
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
@@ -60,6 +110,23 @@ export class DatabaseStorage implements IStorage {
     password: string;
   }): Promise<User> {
     const hashedPassword = await bcrypt.hash(userData.password, 12);
+    
+    if (!db) {
+      // Use memory storage
+      const newUser: User = {
+        id: nextId++,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        profileImageUrl: null,
+        password: hashedPassword,
+        emailVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      memoryUsers.push(newUser);
+      return newUser;
+    }
     
     const [user] = await db
       .insert(users)
