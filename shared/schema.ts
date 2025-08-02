@@ -63,7 +63,27 @@ export const registerSchema = z.object({
   path: ["confirmPassword"],
 });
 
+// Example: Posts table (you can add similar tables)
+export const posts = mysqlTable("posts", {
+  id: int("id").primaryKey().autoincrement(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content"),
+  userId: int("user_id").notNull(),
+  published: boolean("published").default(false),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`),
+});
+
+// Create insert schema for forms
+export const insertPostSchema = createInsertSchema(posts).pick({
+  title: true,
+  content: true,
+  published: true,
+});
+
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type Post = typeof posts.$inferSelect;
+export type InsertPost = z.infer<typeof insertPostSchema>;
 export type LoginForm = z.infer<typeof loginSchema>;
 export type RegisterForm = z.infer<typeof registerSchema>;
