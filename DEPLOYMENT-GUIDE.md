@@ -23,23 +23,32 @@ npm install
 Create a `.env` file in your project root:
 
 ```bash
+# Copy from the example file
+cp .env.example .env
+
+# Edit the .env file with your actual values
 # Firebase Configuration (required for Firebase auth)
 VITE_FIREBASE_API_KEY=your-firebase-api-key
 VITE_FIREBASE_PROJECT_ID=your-firebase-project-id
 VITE_FIREBASE_APP_ID=your-firebase-app-id
 
-# JWT Configuration
+# JWT Configuration (required for email/password auth)
 JWT_SECRET=your-secret-key-for-jwt-tokens
 
 # Database Configuration (optional - uses in-memory if not provided)
 DATABASE_URL=mysql://username:password@localhost:3306/database_name
 
-# Session Configuration
+# Session Configuration (required)
 SESSION_SECRET=your-session-secret-key
 
 # Server Configuration
 PORT=5000
 NODE_ENV=development
+
+# Replit Auth (OPTIONAL - only if you want to use Replit's authentication)
+# Leave these commented out for local development
+# REPLIT_DOMAINS=your-repl-domain.replit.app
+# REPL_ID=your-repl-id
 ```
 
 ### Step 3: Database Setup (Optional)

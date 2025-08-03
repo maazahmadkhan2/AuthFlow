@@ -8,9 +8,8 @@ import memoize from "memoizee";
 import MySQLStore from "express-mysql-session";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+// Make Replit auth optional
+const REPLIT_AUTH_ENABLED = process.env.REPLIT_DOMAINS && process.env.REPL_ID;
 
 const getOidcConfig = memoize(
   async () => {
@@ -122,6 +121,12 @@ export async function setupAuth(app: Express) {
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Only setup Replit OAuth if environment variables are provided
+  if (!REPLIT_AUTH_ENABLED) {
+    console.log('Replit auth disabled - missing REPLIT_DOMAINS or REPL_ID environment variables');
+    return;
+  }
 
   const config = await getOidcConfig();
 
