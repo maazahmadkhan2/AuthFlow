@@ -40,13 +40,13 @@ async function initializeDatabase() {
     console.log('MySQL database connected successfully');
   } catch (error) {
     console.log('MySQL not available, using in-memory storage for development');
-    console.log('Error:', error.message);
+    console.log('Error:', error instanceof Error ? error.message : String(error));
     connection = null;
     db = null;
   }
 }
 
 // Initialize database
-await initializeDatabase();
+initializeDatabase();
 
 export { db, connection };

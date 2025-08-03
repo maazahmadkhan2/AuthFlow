@@ -74,21 +74,26 @@ export class DatabaseStorage implements IStorage {
     
     if (existingUser) {
       // Update existing user
-      const [user] = await db
+      await db
         .update(users)
         .set({
           ...userData,
           updatedAt: new Date(),
         })
-        .where(eq(users.id, existingUser.id))
-        .returning();
+        .where(eq(users.id, existingUser.id));
+      
+      // Fetch and return updated user
+      const [user] = await db.select().from(users).where(eq(users.id, existingUser.id));
       return user;
     } else {
       // Insert new user
-      const [user] = await db
+      const result = await db
         .insert(users)
-        .values(userData)
-        .returning();
+        .values(userData);
+      
+      // Get the inserted user by insertId
+      const insertId = result[0].insertId;
+      const [user] = await db.select().from(users).where(eq(users.id, insertId));
       return user;
     }
   }
@@ -128,15 +133,17 @@ export class DatabaseStorage implements IStorage {
       return newUser;
     }
     
-    const [user] = await db
+    const result = await db
       .insert(users)
       .values({
         ...userData,
         password: hashedPassword,
         emailVerified: false,
-      })
-      .returning();
+      });
     
+    // Get the inserted user by insertId
+    const insertId = result[0].insertId;
+    const [user] = await db.select().from(users).where(eq(users.id, insertId));
     return user;
   }
 
