@@ -63,6 +63,46 @@ export const registerSchema = z.object({
   path: ["confirmPassword"],
 });
 
+// Password reset schema
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Reset token is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+// Password reset tokens table
+export const passwordResetTokens = mysqlTable("password_reset_tokens", {
+  id: int("id").primaryKey().autoincrement(),
+  email: varchar("email", { length: 255 }).notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  emailIdx: index("IDX_password_reset_email").on(table.email),
+  tokenIdx: index("IDX_password_reset_token").on(table.token),
+}));
+
+// Email verification tokens table
+export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
+  id: int("id").primaryKey().autoincrement(),
+  email: varchar("email", { length: 255 }).notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  emailIdx: index("IDX_email_verification_email").on(table.email),
+  tokenIdx: index("IDX_email_verification_token").on(table.token),
+}));
+
 // Example: Posts table (you can add similar tables)
 export const posts = mysqlTable("posts", {
   id: int("id").primaryKey().autoincrement(),
