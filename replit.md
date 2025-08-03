@@ -1,6 +1,11 @@
 # Overview
 
-This is a Firebase-only web application built with React and Node.js. The app uses Firebase Authentication for user management and Firestore database for data storage. It features a modern, mobile-first responsive UI built with React Bootstrap components. The backend is minimal and only serves the React app, with all authentication and database operations handled client-side through Firebase.
+This is a Firebase-only web application built with React and Node.js. The app uses Firebase Authentication for user management and Firestore database for data storage. It features a modern, mobile-first responsive UI built with React Bootstrap components. The authentication system includes login, registration, Google OAuth, and password reset functionality with a streamlined UI - password reset is handled via popup modal instead of a separate tab. The backend is minimal and only serves the React app, with all authentication and database operations handled client-side through Firebase.
+
+## Recent Changes
+- Removed landing page - app now starts directly at authentication page
+- Updated password reset flow to use popup modal instead of separate tab
+- Streamlined authentication UI for better user experience
 
 # User Preferences
 

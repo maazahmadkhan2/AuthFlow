@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Tab, Tabs } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Tab, Tabs, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, registerSchema, forgotPasswordSchema } from '../../../shared/firebase-schema';
@@ -13,6 +13,7 @@ export const AuthPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'danger'; message: string } | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [, setLocation] = useLocation();
 
   const loginForm = useForm({
@@ -181,7 +182,7 @@ export const AuthPage: React.FC = () => {
                       <Button
                         variant="link"
                         className="p-0 text-decoration-none"
-                        onClick={() => setActiveTab('forgot')}
+                        onClick={() => setShowResetModal(true)}
                       >
                         Forgot password?
                       </Button>
@@ -344,61 +345,7 @@ export const AuthPage: React.FC = () => {
                   </Form>
                 </Tab>
 
-                {/* Forgot Password Tab */}
-                <Tab eventKey="forgot" title="Reset Password">
-                  <Form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)} className="mt-3">
-                    <div className="text-center mb-4">
-                      <h5>Reset Your Password</h5>
-                      <p className="text-muted">
-                        Enter your email address and we'll send you a link to reset your password.
-                      </p>
-                    </div>
 
-                    <Form.Group className="mb-4">
-                      <Form.Label>
-                        <FaEnvelope className="me-2" />
-                        Email Address
-                      </Form.Label>
-                      <Form.Control
-                        type="email"
-                        placeholder="Enter your email"
-                        {...forgotPasswordForm.register('email')}
-                        isInvalid={!!forgotPasswordForm.formState.errors.email}
-                        size="lg"
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {forgotPasswordForm.formState.errors.email?.message}
-                      </Form.Control.Feedback>
-                    </Form.Group>
-
-                    <Button
-                      type="submit"
-                      variant="warning"
-                      size="lg"
-                      className="w-100 mb-3"
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
-                          <Spinner animation="border" size="sm" className="me-2" />
-                          Sending...
-                        </>
-                      ) : (
-                        'Send Reset Link'
-                      )}
-                    </Button>
-
-                    <div className="text-center">
-                      <Button
-                        variant="link"
-                        className="text-decoration-none"
-                        onClick={() => setActiveTab('login')}
-                      >
-                        Back to Sign In
-                      </Button>
-                    </div>
-                  </Form>
-                </Tab>
               </Tabs>
 
               <div className="text-center">
@@ -426,6 +373,69 @@ export const AuthPage: React.FC = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Password Reset Modal */}
+      <Modal show={showResetModal} onHide={() => setShowResetModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Reset Your Password</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="text-muted mb-4">
+            Enter your email address and we'll send you a link to reset your password.
+          </p>
+          <Form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)}>
+            <Form.Group className="mb-4">
+              <Form.Label>
+                <FaEnvelope className="me-2" />
+                Email Address
+              </Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="Enter your email"
+                {...forgotPasswordForm.register('email')}
+                isInvalid={!!forgotPasswordForm.formState.errors.email}
+                size="lg"
+              />
+              <Form.Control.Feedback type="invalid">
+                {forgotPasswordForm.formState.errors.email?.message}
+              </Form.Control.Feedback>
+            </Form.Group>
+            <div className="d-grid gap-2">
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                disabled={loading}
+                onClick={(e) => {
+                  forgotPasswordForm.handleSubmit(async (data) => {
+                    await handleForgotPassword(data);
+                    setShowResetModal(false);
+                    forgotPasswordForm.reset();
+                  })(e);
+                }}
+              >
+                {loading ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send Reset Link'
+                )}
+              </Button>
+              <Button
+                variant="outline-secondary"
+                onClick={() => {
+                  setShowResetModal(false);
+                  forgotPasswordForm.reset();
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
     </Container>
   );
 };

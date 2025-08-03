@@ -1,7 +1,6 @@
 import { Route, Switch } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Layout } from "./components/Layout";
-import { LandingPage } from "./pages/LandingPage";
 import { AuthPage } from "./pages/AuthPage";
 import { Dashboard } from "./pages/Dashboard";
 import NotFound from "./pages/not-found";
@@ -13,7 +12,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Layout>
         <Switch>
-          <Route path="/" component={LandingPage} />
+          <Route path="/" component={AuthPage} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/auth" component={AuthPage} />
           <Route component={NotFound} />
