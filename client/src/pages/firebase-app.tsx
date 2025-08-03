@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
@@ -397,9 +397,16 @@ export default function FirebaseApp() {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="remember" 
-                    {...loginForm.register('rememberMe')}
+                  <Controller
+                    name="rememberMe"
+                    control={loginForm.control}
+                    render={({ field }) => (
+                      <Checkbox 
+                        id="remember" 
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
                   />
                   <Label htmlFor="remember" className="text-sm">
                     Remember me
@@ -534,9 +541,16 @@ export default function FirebaseApp() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="terms" 
-                  {...registerForm.register('acceptTerms')}
+                <Controller
+                  name="acceptTerms"
+                  control={registerForm.control}
+                  render={({ field }) => (
+                    <Checkbox 
+                      id="terms" 
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
                 />
                 <Label htmlFor="terms" className="text-sm">
                   I agree to the{' '}

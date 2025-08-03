@@ -14,7 +14,7 @@ export function FirebaseAuth() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      await signInWithGoogle(true); // Use popup
+      await signInWithGoogle(); // Use popup
       toast({
         title: "Success",
         description: "Signed in with Google successfully!",
