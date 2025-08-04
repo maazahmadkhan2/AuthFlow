@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Layout } from "./components/Layout";
 import { AuthPage } from "./pages/AuthPage";
 import { Dashboard } from "./pages/Dashboard";
+import { Profile } from "./pages/Profile";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient();
@@ -14,6 +15,7 @@ function App() {
         <Switch>
           <Route path="/" component={AuthPage} />
           <Route path="/dashboard" component={Dashboard} />
+          <Route path="/profile" component={Profile} />
           <Route path="/auth" component={AuthPage} />
           <Route component={NotFound} />
         </Switch>

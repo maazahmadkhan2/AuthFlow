@@ -46,6 +46,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <Nav className="ms-auto">
               {user ? (
                 <>
+                  <Nav.Link href="/dashboard" onClick={handleNavClick} className="text-light">
+                    Dashboard
+                  </Nav.Link>
+                  <Nav.Link href="/profile" onClick={handleNavClick} className="text-light">
+                    Profile
+                  </Nav.Link>
                   <Nav.Link disabled className="text-light">
                     Welcome, {user.displayName || user.email}
                   </Nav.Link>

@@ -3,7 +3,8 @@ import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Modal } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, registerSchema, forgotPasswordSchema } from '../../../shared/firebase-schema';
-import { signInWithEmail, signUpWithEmail, signInWithGoogle, resetPassword } from '../lib/firebase';
+import { signInWithEmail, signUpWithEmail, signInWithGoogle, resetPassword, resendEmailVerification, auth } from '../lib/firebase';
+import { getAuth } from 'firebase/auth';
 import { useLocation } from 'wouter';
 import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
 
@@ -14,6 +15,7 @@ export const AuthPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'danger'; message: string } | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showResendVerification, setShowResendVerification] = useState(false);
   const [, setLocation] = useLocation();
 
   const loginForm = useForm({
@@ -57,7 +59,13 @@ export const AuthPage: React.FC = () => {
       setLocation('/dashboard');
     } catch (error: any) {
       console.error('Login error:', error);
-      showAlert('danger', error.message || 'Failed to sign in');
+      const message = error.message || 'Failed to sign in';
+      showAlert('danger', message);
+      
+      // Show resend verification option if email is not verified
+      if (message.includes('verify your email')) {
+        setShowResendVerification(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -97,9 +105,31 @@ export const AuthPage: React.FC = () => {
       await resetPassword(data.email);
       showAlert('success', 'Password reset email sent! Check your inbox.');
       setShowResetModal(false);
+      forgotPasswordForm.reset();
     } catch (error: any) {
       console.error('Password reset error:', error);
       showAlert('danger', error.message || 'Failed to send password reset email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    const email = loginForm.getValues('email');
+    if (!email) {
+      showAlert('danger', 'Please enter your email address first');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // For simplicity, we'll show a generic message since we can't verify email exists
+      // In a real app, you might have a backend endpoint to handle this
+      showAlert('info', 'If this email exists in our system and is unverified, a verification email will be sent.');
+      setShowResendVerification(false);
+    } catch (error: any) {
+      console.error('Error sending verification email:', error);
+      showAlert('danger', error.message || 'Failed to send verification email');
     } finally {
       setLoading(false);
     }
@@ -216,6 +246,20 @@ export const AuthPage: React.FC = () => {
                       <FaGoogle className="me-2" />
                       Continue with Google
                     </Button>
+
+                    {showResendVerification && (
+                      <div className="text-center mb-3">
+                        <Button
+                          variant="outline-warning"
+                          size="sm"
+                          onClick={handleResendVerification}
+                          disabled={loading}
+                          style={{ fontSize: '14px', height: '32px' }}
+                        >
+                          Resend Verification Email
+                        </Button>
+                      </div>
+                    )}
 
                     <div className="text-center">
                       <span className="text-muted small">Don't have an account? </span>

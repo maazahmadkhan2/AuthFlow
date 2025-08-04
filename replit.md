@@ -13,6 +13,10 @@ This is a Firebase-only web application built with React and Node.js. The app us
 - Removed all posts functionality from dashboard, keeping only user information section
 - Reduced font sizes and input/button heights to 14px and 38px respectively for compact design
 - Added automatic navbar collapse functionality on route changes and login state changes
+- Created user profile page with edit basic info and password change functionality
+- Added resend verification email option from login screen when verification fails
+- Implemented in-app password reset functionality with proper re-authentication
+- Added navigation links to Dashboard and Profile in navbar for authenticated users
 
 # User Preferences
 

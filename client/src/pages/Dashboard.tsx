@@ -101,6 +101,14 @@ export const Dashboard: React.FC = () => {
               <h1 className="mb-2">Dashboard</h1>
               <p className="text-muted mb-0">Welcome back, {user.displayName || userData?.firstName || 'User'}!</p>
             </div>
+            <Button 
+              variant="outline-primary" 
+              size="sm"
+              onClick={() => setLocation('/profile')}
+              style={{ fontSize: '14px', height: '32px' }}
+            >
+              Edit Profile
+            </Button>
           </div>
         </Col>
       </Row>

@@ -10,6 +10,9 @@ import {
   updateProfile,
   sendPasswordResetEmail,
   sendEmailVerification,
+  updatePassword as firebaseUpdatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
   User
 } from "firebase/auth";
 import { 
@@ -159,6 +162,21 @@ export const resendEmailVerification = async (user: User) => {
     await sendEmailVerification(user);
   } catch (error) {
     console.error("Error sending email verification:", error);
+    throw error;
+  }
+};
+
+// Password Update
+export const updatePassword = async (user: User, currentPassword: string, newPassword: string) => {
+  try {
+    // Re-authenticate user with current password
+    const credential = EmailAuthProvider.credential(user.email!, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+    
+    // Update password
+    await firebaseUpdatePassword(user, newPassword);
+  } catch (error) {
+    console.error("Error updating password:", error);
     throw error;
   }
 };
