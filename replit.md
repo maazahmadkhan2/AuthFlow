@@ -9,6 +9,10 @@ This is a Firebase-only web application built with React and Node.js. The app us
 - Changed authentication UI from tabs to single form with "Create an account" link
 - Updated registration button color from green to blue (primary variant)
 - Improved authentication flow with cleaner navigation between login and signup
+- Added email verification requirement - users cannot login without verified emails
+- Removed all posts functionality from dashboard, keeping only user information section
+- Reduced font sizes and input/button heights to 14px and 38px respectively for compact design
+- Added automatic navbar collapse functionality on route changes and login state changes
 
 # User Preferences
 
