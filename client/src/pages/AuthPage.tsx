@@ -106,13 +106,13 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <Container className="py-5">
+    <Container className="py-4" style={{ fontSize: '14px' }}>
       <Row className="justify-content-center">
         <Col xs={12} sm={10} md={8} lg={6} xl={5}>
           <Card className="shadow-lg border-0">
-            <Card.Header className="bg-primary text-white text-center py-4">
-              <h2 className="mb-0">{activeTab === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
-              <p className="mb-0 opacity-75">
+            <Card.Header className="bg-primary text-white text-center py-3">
+              <h4 className="mb-0">{activeTab === 'login' ? 'Welcome Back' : 'Create Account'}</h4>
+              <p className="mb-0 opacity-75 small">
                 {activeTab === 'login' ? 'Sign in to your account' : 'Join us today'}
               </p>
             </Card.Header>
@@ -126,9 +126,9 @@ export const AuthPage: React.FC = () => {
               {activeTab === 'login' ? (
                 <div>
                   {/* Login Form */}
-                  <Form onSubmit={loginForm.handleSubmit(handleLogin)} className="mt-3">
+                  <Form onSubmit={loginForm.handleSubmit(handleLogin)} className="mt-2">
                     <Form.Group className="mb-3">
-                      <Form.Label>
+                      <Form.Label className="small">
                         <FaEnvelope className="me-2" />
                         Email Address
                       </Form.Label>
@@ -137,7 +137,7 @@ export const AuthPage: React.FC = () => {
                         placeholder="Enter your email"
                         {...loginForm.register('email')}
                         isInvalid={!!loginForm.formState.errors.email}
-                        size="lg"
+                        style={{ height: '38px', fontSize: '14px' }}
                       />
                       <Form.Control.Feedback type="invalid">
                         {loginForm.formState.errors.email?.message}
@@ -145,7 +145,7 @@ export const AuthPage: React.FC = () => {
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>
+                      <Form.Label className="small">
                         <FaLock className="me-2" />
                         Password
                       </Form.Label>
@@ -155,15 +155,15 @@ export const AuthPage: React.FC = () => {
                           placeholder="Enter your password"
                           {...loginForm.register('password')}
                           isInvalid={!!loginForm.formState.errors.password}
-                          size="lg"
+                          style={{ height: '38px', fontSize: '14px' }}
                         />
                         <Button
                           variant="link"
-                          className="position-absolute top-50 end-0 translate-middle-y text-muted border-0"
+                          className="position-absolute top-50 end-0 translate-middle-y text-muted border-0 p-2"
                           style={{ zIndex: 5 }}
                           onClick={() => setShowPassword(!showPassword)}
                         >
-                          {showPassword ? <FaEyeSlash /> : <FaEye />}
+                          {showPassword ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                         </Button>
                       </div>
                       <Form.Control.Feedback type="invalid">
@@ -171,15 +171,16 @@ export const AuthPage: React.FC = () => {
                       </Form.Control.Feedback>
                     </Form.Group>
 
-                    <div className="d-flex justify-content-between align-items-center mb-4">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
                       <Form.Check
                         type="checkbox"
                         label="Remember me"
+                        className="small"
                         {...loginForm.register('rememberMe')}
                       />
                       <Button
                         variant="link"
-                        className="p-0 text-decoration-none"
+                        className="p-0 text-decoration-none small"
                         onClick={() => setShowResetModal(true)}
                       >
                         Forgot password?
@@ -189,8 +190,8 @@ export const AuthPage: React.FC = () => {
                     <Button
                       type="submit"
                       variant="primary"
-                      size="lg"
                       className="w-100 mb-3"
+                      style={{ height: '38px', fontSize: '14px' }}
                       disabled={loading}
                     >
                       {loading ? (
@@ -203,12 +204,12 @@ export const AuthPage: React.FC = () => {
                       )}
                     </Button>
 
-                    <hr className="my-4" />
+                    <hr className="my-3" />
 
                     <Button
                       variant="outline-secondary"
-                      size="lg"
                       className="w-100 mb-3"
+                      style={{ height: '38px', fontSize: '14px' }}
                       onClick={handleGoogleSignIn}
                       disabled={loading}
                     >
@@ -217,10 +218,10 @@ export const AuthPage: React.FC = () => {
                     </Button>
 
                     <div className="text-center">
-                      <span className="text-muted">Don't have an account? </span>
+                      <span className="text-muted small">Don't have an account? </span>
                       <Button
                         variant="link"
-                        className="p-0 text-decoration-none fw-bold"
+                        className="p-0 text-decoration-none fw-bold small"
                         onClick={() => setActiveTab('register')}
                       >
                         Create an account
@@ -231,11 +232,11 @@ export const AuthPage: React.FC = () => {
               ) : (
                 <div>
                   {/* Register Form */}
-                  <Form onSubmit={registerForm.handleSubmit(handleRegister)} className="mt-3">
+                  <Form onSubmit={registerForm.handleSubmit(handleRegister)} className="mt-2">
                     <Row>
                       <Col xs={12} sm={6}>
                         <Form.Group className="mb-3">
-                          <Form.Label>
+                          <Form.Label className="small">
                             <FaUser className="me-2" />
                             First Name
                           </Form.Label>
@@ -244,7 +245,7 @@ export const AuthPage: React.FC = () => {
                             placeholder="First name"
                             {...registerForm.register('firstName')}
                             isInvalid={!!registerForm.formState.errors.firstName}
-                            size="lg"
+                            style={{ height: '38px', fontSize: '14px' }}
                           />
                           <Form.Control.Feedback type="invalid">
                             {registerForm.formState.errors.firstName?.message}
@@ -253,13 +254,13 @@ export const AuthPage: React.FC = () => {
                       </Col>
                       <Col xs={12} sm={6}>
                         <Form.Group className="mb-3">
-                          <Form.Label>Last Name</Form.Label>
+                          <Form.Label className="small">Last Name</Form.Label>
                           <Form.Control
                             type="text"
                             placeholder="Last name"
                             {...registerForm.register('lastName')}
                             isInvalid={!!registerForm.formState.errors.lastName}
-                            size="lg"
+                            style={{ height: '38px', fontSize: '14px' }}
                           />
                           <Form.Control.Feedback type="invalid">
                             {registerForm.formState.errors.lastName?.message}
@@ -269,7 +270,7 @@ export const AuthPage: React.FC = () => {
                     </Row>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>
+                      <Form.Label className="small">
                         <FaEnvelope className="me-2" />
                         Email Address
                       </Form.Label>
@@ -278,7 +279,7 @@ export const AuthPage: React.FC = () => {
                         placeholder="Enter your email"
                         {...registerForm.register('email')}
                         isInvalid={!!registerForm.formState.errors.email}
-                        size="lg"
+                        style={{ height: '38px', fontSize: '14px' }}
                       />
                       <Form.Control.Feedback type="invalid">
                         {registerForm.formState.errors.email?.message}
@@ -286,7 +287,7 @@ export const AuthPage: React.FC = () => {
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>
+                      <Form.Label className="small">
                         <FaLock className="me-2" />
                         Password
                       </Form.Label>
@@ -296,15 +297,15 @@ export const AuthPage: React.FC = () => {
                           placeholder="Create a password"
                           {...registerForm.register('password')}
                           isInvalid={!!registerForm.formState.errors.password}
-                          size="lg"
+                          style={{ height: '38px', fontSize: '14px' }}
                         />
                         <Button
                           variant="link"
-                          className="position-absolute top-50 end-0 translate-middle-y text-muted border-0"
+                          className="position-absolute top-50 end-0 translate-middle-y text-muted border-0 p-2"
                           style={{ zIndex: 5 }}
                           onClick={() => setShowPassword(!showPassword)}
                         >
-                          {showPassword ? <FaEyeSlash /> : <FaEye />}
+                          {showPassword ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                         </Button>
                       </div>
                       <Form.Control.Feedback type="invalid">
@@ -313,22 +314,22 @@ export const AuthPage: React.FC = () => {
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>Confirm Password</Form.Label>
+                      <Form.Label className="small">Confirm Password</Form.Label>
                       <div className="position-relative">
                         <Form.Control
                           type={showConfirmPassword ? 'text' : 'password'}
                           placeholder="Confirm your password"
                           {...registerForm.register('confirmPassword')}
                           isInvalid={!!registerForm.formState.errors.confirmPassword}
-                          size="lg"
+                          style={{ height: '38px', fontSize: '14px' }}
                         />
                         <Button
                           variant="link"
-                          className="position-absolute top-50 end-0 translate-middle-y text-muted border-0"
+                          className="position-absolute top-50 end-0 translate-middle-y text-muted border-0 p-2"
                           style={{ zIndex: 5 }}
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         >
-                          {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                          {showConfirmPassword ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                         </Button>
                       </div>
                       <Form.Control.Feedback type="invalid">
@@ -336,10 +337,11 @@ export const AuthPage: React.FC = () => {
                       </Form.Control.Feedback>
                     </Form.Group>
 
-                    <Form.Group className="mb-4">
+                    <Form.Group className="mb-3">
                       <Form.Check
                         type="checkbox"
                         label="I accept the Terms of Service and Privacy Policy"
+                        className="small"
                         {...registerForm.register('acceptTerms')}
                         isInvalid={!!registerForm.formState.errors.acceptTerms}
                       />
@@ -351,8 +353,8 @@ export const AuthPage: React.FC = () => {
                     <Button
                       type="submit"
                       variant="primary"
-                      size="lg"
                       className="w-100 mb-3"
+                      style={{ height: '38px', fontSize: '14px' }}
                       disabled={loading}
                     >
                       {loading ? (
@@ -365,12 +367,12 @@ export const AuthPage: React.FC = () => {
                       )}
                     </Button>
 
-                    <hr className="my-4" />
+                    <hr className="my-3" />
 
                     <Button
                       variant="outline-secondary"
-                      size="lg"
                       className="w-100 mb-3"
+                      style={{ height: '38px', fontSize: '14px' }}
                       onClick={handleGoogleSignIn}
                       disabled={loading}
                     >
@@ -379,10 +381,10 @@ export const AuthPage: React.FC = () => {
                     </Button>
 
                     <div className="text-center">
-                      <span className="text-muted">Already have an account? </span>
+                      <span className="text-muted small">Already have an account? </span>
                       <Button
                         variant="link"
-                        className="p-0 text-decoration-none fw-bold"
+                        className="p-0 text-decoration-none fw-bold small"
                         onClick={() => setActiveTab('login')}
                       >
                         Sign in
@@ -399,17 +401,18 @@ export const AuthPage: React.FC = () => {
       {/* Password Reset Modal */}
       <Modal show={showResetModal} onHide={() => setShowResetModal(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Reset Password</Modal.Title>
+          <Modal.Title className="small">Reset Password</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)}>
             <Form.Group className="mb-3">
-              <Form.Label>Email Address</Form.Label>
+              <Form.Label className="small">Email Address</Form.Label>
               <Form.Control
                 type="email"
                 placeholder="Enter your email"
                 {...forgotPasswordForm.register('email')}
                 isInvalid={!!forgotPasswordForm.formState.errors.email}
+                style={{ height: '38px', fontSize: '14px' }}
               />
               <Form.Control.Feedback type="invalid">
                 {forgotPasswordForm.formState.errors.email?.message}
@@ -421,6 +424,7 @@ export const AuthPage: React.FC = () => {
                 variant="primary"
                 disabled={loading}
                 className="flex-fill"
+                style={{ height: '38px', fontSize: '14px' }}
               >
                 {loading ? (
                   <>
@@ -433,6 +437,7 @@ export const AuthPage: React.FC = () => {
               </Button>
               <Button
                 variant="secondary"
+                style={{ height: '38px', fontSize: '14px' }}
                 onClick={() => {
                   setShowResetModal(false);
                   forgotPasswordForm.reset();

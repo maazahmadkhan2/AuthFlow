@@ -33,7 +33,7 @@ export const Dashboard: React.FC = () => {
       loadUserData();
       loadPosts();
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, setLocation]);
 
   const loadUserData = async () => {
     if (!user) return;
