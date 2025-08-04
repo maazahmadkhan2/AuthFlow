@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Tab, Tabs, Modal } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, registerSchema, forgotPasswordSchema } from '../../../shared/firebase-schema';
@@ -46,7 +46,7 @@ export const AuthPage: React.FC = () => {
 
   const showAlert = (type: 'success' | 'danger', message: string) => {
     setAlert({ type, message });
-    setTimeout(() => setAlert(null), 5000);
+    setTimeout(() => setAlert(null), 10000);
   };
 
   const handleLogin = async (data: any) => {
@@ -96,6 +96,7 @@ export const AuthPage: React.FC = () => {
     try {
       await resetPassword(data.email);
       showAlert('success', 'Password reset email sent! Check your inbox.');
+      setShowResetModal(false);
     } catch (error: any) {
       console.error('Password reset error:', error);
       showAlert('danger', error.message || 'Failed to send password reset email');
@@ -110,8 +111,10 @@ export const AuthPage: React.FC = () => {
         <Col xs={12} sm={10} md={8} lg={6} xl={5}>
           <Card className="shadow-lg border-0">
             <Card.Header className="bg-primary text-white text-center py-4">
-              <h2 className="mb-0">Welcome</h2>
-              <p className="mb-0 opacity-75">Sign in to your account or create a new one</p>
+              <h2 className="mb-0">{activeTab === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
+              <p className="mb-0 opacity-75">
+                {activeTab === 'login' ? 'Sign in to your account' : 'Join us today'}
+              </p>
             </Card.Header>
             <Card.Body className="p-4">
               {alert && (
@@ -120,14 +123,9 @@ export const AuthPage: React.FC = () => {
                 </Alert>
               )}
 
-              <Tabs
-                activeKey={activeTab}
-                onSelect={(k) => k && setActiveTab(k)}
-                className="mb-4"
-                justify
-              >
-                {/* Login Tab */}
-                <Tab eventKey="login" title="Sign In">
+              {activeTab === 'login' ? (
+                <div>
+                  {/* Login Form */}
                   <Form onSubmit={loginForm.handleSubmit(handleLogin)} className="mt-3">
                     <Form.Group className="mb-3">
                       <Form.Label>
@@ -204,11 +202,35 @@ export const AuthPage: React.FC = () => {
                         'Sign In'
                       )}
                     </Button>
-                  </Form>
-                </Tab>
 
-                {/* Register Tab */}
-                <Tab eventKey="register" title="Sign Up">
+                    <hr className="my-4" />
+
+                    <Button
+                      variant="outline-secondary"
+                      size="lg"
+                      className="w-100 mb-3"
+                      onClick={handleGoogleSignIn}
+                      disabled={loading}
+                    >
+                      <FaGoogle className="me-2" />
+                      Continue with Google
+                    </Button>
+
+                    <div className="text-center">
+                      <span className="text-muted">Don't have an account? </span>
+                      <Button
+                        variant="link"
+                        className="p-0 text-decoration-none fw-bold"
+                        onClick={() => setActiveTab('register')}
+                      >
+                        Create an account
+                      </Button>
+                    </div>
+                  </Form>
+                </div>
+              ) : (
+                <div>
+                  {/* Register Form */}
                   <Form onSubmit={registerForm.handleSubmit(handleRegister)} className="mt-3">
                     <Row>
                       <Col xs={12} sm={6}>
@@ -328,7 +350,7 @@ export const AuthPage: React.FC = () => {
 
                     <Button
                       type="submit"
-                      variant="success"
+                      variant="primary"
                       size="lg"
                       className="w-100 mb-3"
                       disabled={loading}
@@ -342,33 +364,33 @@ export const AuthPage: React.FC = () => {
                         'Create Account'
                       )}
                     </Button>
+
+                    <hr className="my-4" />
+
+                    <Button
+                      variant="outline-secondary"
+                      size="lg"
+                      className="w-100 mb-3"
+                      onClick={handleGoogleSignIn}
+                      disabled={loading}
+                    >
+                      <FaGoogle className="me-2" />
+                      Continue with Google
+                    </Button>
+
+                    <div className="text-center">
+                      <span className="text-muted">Already have an account? </span>
+                      <Button
+                        variant="link"
+                        className="p-0 text-decoration-none fw-bold"
+                        onClick={() => setActiveTab('login')}
+                      >
+                        Sign in
+                      </Button>
+                    </div>
                   </Form>
-                </Tab>
-
-
-              </Tabs>
-
-              <div className="text-center">
-                <div className="my-4">
-                  <div className="position-relative">
-                    <hr />
-                    <span className="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted">
-                      OR
-                    </span>
-                  </div>
                 </div>
-
-                <Button
-                  variant="outline-danger"
-                  size="lg"
-                  className="w-100"
-                  onClick={handleGoogleSignIn}
-                  disabled={loading}
-                >
-                  <FaGoogle className="me-2" />
-                  Continue with Google
-                </Button>
-              </div>
+              )}
             </Card.Body>
           </Card>
         </Col>
@@ -377,42 +399,28 @@ export const AuthPage: React.FC = () => {
       {/* Password Reset Modal */}
       <Modal show={showResetModal} onHide={() => setShowResetModal(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Reset Your Password</Modal.Title>
+          <Modal.Title>Reset Password</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p className="text-muted mb-4">
-            Enter your email address and we'll send you a link to reset your password.
-          </p>
           <Form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)}>
-            <Form.Group className="mb-4">
-              <Form.Label>
-                <FaEnvelope className="me-2" />
-                Email Address
-              </Form.Label>
+            <Form.Group className="mb-3">
+              <Form.Label>Email Address</Form.Label>
               <Form.Control
                 type="email"
                 placeholder="Enter your email"
                 {...forgotPasswordForm.register('email')}
                 isInvalid={!!forgotPasswordForm.formState.errors.email}
-                size="lg"
               />
               <Form.Control.Feedback type="invalid">
                 {forgotPasswordForm.formState.errors.email?.message}
               </Form.Control.Feedback>
             </Form.Group>
-            <div className="d-grid gap-2">
+            <div className="d-flex gap-2">
               <Button
                 type="submit"
                 variant="primary"
-                size="lg"
                 disabled={loading}
-                onClick={(e) => {
-                  forgotPasswordForm.handleSubmit(async (data) => {
-                    await handleForgotPassword(data);
-                    setShowResetModal(false);
-                    forgotPasswordForm.reset();
-                  })(e);
-                }}
+                className="flex-fill"
               >
                 {loading ? (
                   <>
@@ -420,11 +428,11 @@ export const AuthPage: React.FC = () => {
                     Sending...
                   </>
                 ) : (
-                  'Send Reset Link'
+                  'Send Reset Email'
                 )}
               </Button>
               <Button
-                variant="outline-secondary"
+                variant="secondary"
                 onClick={() => {
                   setShowResetModal(false);
                   forgotPasswordForm.reset();
