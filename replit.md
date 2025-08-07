@@ -3,10 +3,19 @@
 This is a Firebase-only web application built with React and Node.js. The app uses Firebase Authentication for user management and Firestore database for data storage. It features a modern, mobile-first responsive UI built with React Bootstrap components. The authentication system includes login, registration, Google OAuth, and password reset functionality with a streamlined UI - password reset is handled via popup modal instead of a separate tab. The backend is minimal and only serves the React app, with all authentication and database operations handled client-side through Firebase.
 
 ## Recent Changes
+- **Successfully implemented hybrid Firebase auth + PostgreSQL database architecture (August 2025)**:
+  - Created comprehensive role-based signup system preventing admin role selection during registration  
+  - Built database-driven user approval workflow where all new users default to pending status
+  - Implemented DatabaseAdminDashboard with full user management capabilities (approve/reject/role changes)
+  - Created default super admin account with credentials (admin@system.local / AdminPass123!) for initial system access
+  - **Integrated in-app email verification and password reset functionality**:
+    - Moved resend verification to alert notification instead of button for better UX
+    - Implemented PasswordResetModal for in-app password management without external Firebase redirects
+    - Created PendingApprovalMessage component for seamless user status feedback
 - Successfully completed migration from Replit Agent to standard Replit environment (January 2025)
 - All dependencies properly installed and configured for Replit compatibility
 - Fixed Firebase authentication configuration with proper API keys
-- **Implemented comprehensive role-based access control system (January 2025)**:
+- **Previous role-based access control system (January 2025)**:
   - Added 5 user roles: admin, manager, coordinator, instructor, student
   - Created role-specific dashboards with tailored functionality and permissions
   - Implemented role management functions for admins (assign roles, toggle user status)

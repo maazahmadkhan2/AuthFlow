@@ -1,12 +1,13 @@
 import { Route, Switch } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Layout } from "./components/Layout";
 import { AuthPage } from "./pages/AuthPage";
 import { Dashboard } from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
+import { SignupWithRoles } from "./pages/signup-with-roles";
+import { AdminLogin } from "./pages/admin-login";
 import NotFound from "./pages/not-found";
-
-const queryClient = new QueryClient();
+import { queryClient } from "./lib/queryClient";
 
 function App() {
   return (
@@ -17,6 +18,8 @@ function App() {
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/profile" component={Profile} />
           <Route path="/auth" component={AuthPage} />
+          <Route path="/signup" component={SignupWithRoles} />
+          <Route path="/admin" component={AdminLogin} />
           <Route component={NotFound} />
         </Switch>
       </Layout>

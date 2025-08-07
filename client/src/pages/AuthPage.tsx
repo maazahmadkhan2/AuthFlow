@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, registerSchema, forgotPasswordSchema } from '../../../shared/firebase-schema';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, resetPassword, resendEmailVerification, auth, checkEmailExists } from '../lib/firebase';
-import { getAuth } from 'firebase/auth';
-import { useLocation } from 'wouter';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { useLocation, Link } from 'wouter';
 import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
+import { PendingApprovalMessage } from '../components/PendingApprovalMessage';
+import { PasswordResetModal } from '../components/PasswordResetModal';
 
 export const AuthPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('login');
@@ -15,7 +17,8 @@ export const AuthPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'danger'; message: string } | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
-  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [emailVerified, setEmailVerified] = useState(false);
   const [, setLocation] = useLocation();
 
   const loginForm = useForm({
@@ -51,6 +54,25 @@ export const AuthPage: React.FC = () => {
     setTimeout(() => setAlert(null), 10000);
   };
 
+  // Monitor authentication state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        setEmailVerified(currentUser.emailVerified);
+        // If user is verified and approved, redirect to dashboard
+        if (currentUser.emailVerified) {
+          // Check database approval status would happen in PendingApprovalMessage
+        }
+      } else {
+        setUser(null);
+        setEmailVerified(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const handleLogin = async (data: any) => {
     setLoading(true);
     try {
@@ -62,10 +84,7 @@ export const AuthPage: React.FC = () => {
       const message = error.message || 'Failed to sign in';
       showAlert('danger', message);
       
-      // Show resend verification option if email is not verified
-      if (message.includes('verify your email') || message.includes('verification')) {
-        setShowResendVerification(true);
-      }
+      // Email verification errors are handled by PendingApprovalMessage component
     } finally {
       setLoading(false);
     }
@@ -271,32 +290,30 @@ export const AuthPage: React.FC = () => {
                       Continue with Google
                     </Button>
 
-                    {showResendVerification && (
-                      <div className="text-center mb-3">
-                        <Button
-                          variant="outline-warning"
-                          size="sm"
-                          onClick={handleResendVerification}
-                          disabled={loading}
-                          style={{ fontSize: '14px', height: '32px' }}
-                        >
-                          Resend Verification Email
-                        </Button>
-                      </div>
-                    )}
+
 
                     <div className="text-center">
                       <span className="text-muted small">Don't have an account? </span>
                       <Button
                         variant="link"
                         className="p-0 text-decoration-none fw-bold small"
-                        onClick={() => {
-                          setActiveTab('register');
-                          setShowResendVerification(false);
-                        }}
+                        onClick={() => setActiveTab('register')}
                       >
                         Create an account
                       </Button>
+                      <br />
+                      <small className="text-muted">or </small>
+                      <Link href="/signup" className="text-primary small">
+                        <strong>Register with Role Selection</strong>
+                      </Link>
+                    </div>
+                    <hr />
+                    <div className="text-center">
+                      <small>
+                        System Administrator? <Link href="/admin" className="text-danger fw-bold">
+                          Admin Login
+                        </Link>
+                      </small>
                     </div>
                   </Form>
                 </div>
@@ -464,62 +481,23 @@ export const AuthPage: React.FC = () => {
                   </Form>
                 </div>
               )}
+
+              {/* Show pending approval message for authenticated users */}
+              {user && (
+                <PendingApprovalMessage user={user} emailVerified={emailVerified} />
+              )}
             </Card.Body>
           </Card>
         </Col>
       </Row>
 
-      {/* Password Reset Modal */}
-      <Modal show={showResetModal} onHide={() => setShowResetModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title className="small">Reset Password</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)}>
-            <Form.Group className="mb-3">
-              <Form.Label className="small">Email Address</Form.Label>
-              <Form.Control
-                type="email"
-                placeholder="Enter your email"
-                {...forgotPasswordForm.register('email')}
-                isInvalid={!!forgotPasswordForm.formState.errors.email}
-                style={{ height: '38px', fontSize: '14px' }}
-              />
-              <Form.Control.Feedback type="invalid">
-                {forgotPasswordForm.formState.errors.email?.message}
-              </Form.Control.Feedback>
-            </Form.Group>
-            <div className="d-flex gap-2">
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={loading}
-                className="flex-fill"
-                style={{ height: '38px', fontSize: '14px' }}
-              >
-                {loading ? (
-                  <>
-                    <Spinner animation="border" size="sm" className="me-2" />
-                    Sending...
-                  </>
-                ) : (
-                  'Send Reset Email'
-                )}
-              </Button>
-              <Button
-                variant="secondary"
-                style={{ height: '38px', fontSize: '14px' }}
-                onClick={() => {
-                  setShowResetModal(false);
-                  forgotPasswordForm.reset();
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </Form>
-        </Modal.Body>
-      </Modal>
+      {/* Password Reset Modal - Using new component */}
+      <PasswordResetModal
+        show={showResetModal}
+        onHide={() => setShowResetModal(false)}
+        user={user}
+        mode="reset"
+      />
     </Container>
   );
 };

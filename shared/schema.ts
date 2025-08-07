@@ -1,129 +1,110 @@
 import { sql } from 'drizzle-orm';
 import {
-  mysqlTable,
-  varchar,
-  text,
-  boolean,
-  timestamp,
   index,
-  json,
-  int,
-} from "drizzle-orm/mysql-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
+  jsonb,
+  pgTable,
+  timestamp,
+  varchar,
+  boolean,
+  text,
+  pgEnum,
+} from "drizzle-orm/pg-core";
+import { createInsertSchema } from 'drizzle-zod';
+import { z } from 'zod';
 
-// Session storage table for MySQL  
-export const sessions = mysqlTable(
+// Enums for roles and status
+export const roleEnum = pgEnum('role', ['admin', 'manager', 'coordinator', 'instructor', 'student']);
+export const statusEnum = pgEnum('status', ['pending', 'approved', 'rejected', 'inactive']);
+
+// Session storage table for auth
+export const sessions = pgTable(
   "sessions",
   {
-    sid: varchar("sid", { length: 128 }).primaryKey(),
-    sess: json("sess").notNull(),
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
     expire: timestamp("expire").notNull(),
   },
-  (table) => ({
-    expireIdx: index("IDX_session_expire").on(table.expire),
-  })
+  (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table for MySQL
-export const users = mysqlTable("users", {
-  id: int("id").primaryKey().autoincrement(),
-  email: varchar("email", { length: 255 }).unique(),
-  firstName: varchar("first_name", { length: 100 }),
-  lastName: varchar("last_name", { length: 100 }),
-  profileImageUrl: text("profile_image_url"),
-  password: text("password"), // For email/password authentication
-  emailVerified: boolean("email_verified").default(false),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`),
+// Users table with role-based access control
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey(), // Firebase UID
+  email: varchar("email").unique().notNull(),
+  firstName: varchar("first_name").notNull(),
+  lastName: varchar("last_name").notNull(),
+  displayName: varchar("display_name").notNull(),
+  profileImageUrl: varchar("profile_image_url"),
+  role: roleEnum("role").notNull().default('student'),
+  status: statusEnum("status").notNull().default('pending'),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  isDefaultAdmin: boolean("is_default_admin").default(false),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: varchar("approved_by"),
+  rejectedAt: timestamp("rejected_at"),
+  rejectedBy: varchar("rejected_by"),
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  email: true,
-  firstName: true,
-  lastName: true,
-  password: true,
+// Role changes audit log
+export const roleChanges = pgTable("role_changes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  changedBy: varchar("changed_by").notNull().references(() => users.id),
+  previousRole: roleEnum("previous_role"),
+  newRole: roleEnum("new_role").notNull(),
+  reason: text("reason"),
+  timestamp: timestamp("timestamp").defaultNow(),
 });
 
-export const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-  rememberMe: z.boolean().optional(),
+// User approvals audit log
+export const userApprovals = pgTable("user_approvals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  approvedBy: varchar("approved_by").references(() => users.id),
+  rejectedBy: varchar("rejected_by").references(() => users.id),
+  action: varchar("action").notNull(), // 'approved', 'rejected', 'reactivated', 'deactivated'
+  reason: text("reason"),
+  timestamp: timestamp("timestamp").defaultNow(),
 });
 
-export const registerSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string(),
-  acceptTerms: z.boolean().refine(val => val === true, "You must accept the terms"),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
+// Zod schemas for validation
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  approvedAt: true,
+  rejectedAt: true,
 });
 
-// Password reset schema
-export const forgotPasswordSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+export const insertRoleChangeSchema = createInsertSchema(roleChanges).omit({
+  id: true,
+  timestamp: true,
 });
 
-export const resetPasswordSchema = z.object({
-  token: z.string().min(1, "Reset token is required"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
+export const insertUserApprovalSchema = createInsertSchema(userApprovals).omit({
+  id: true,
+  timestamp: true,
 });
 
-// Password reset tokens table
-export const passwordResetTokens = mysqlTable("password_reset_tokens", {
-  id: int("id").primaryKey().autoincrement(),
-  email: varchar("email", { length: 255 }).notNull(),
-  token: varchar("token", { length: 255 }).notNull().unique(),
-  expiresAt: timestamp("expires_at").notNull(),
-  used: boolean("used").default(false),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-}, (table) => ({
-  emailIdx: index("IDX_password_reset_email").on(table.email),
-  tokenIdx: index("IDX_password_reset_token").on(table.token),
-}));
-
-// Email verification tokens table
-export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
-  id: int("id").primaryKey().autoincrement(),
-  email: varchar("email", { length: 255 }).notNull(),
-  token: varchar("token", { length: 255 }).notNull().unique(),
-  expiresAt: timestamp("expires_at").notNull(),
-  used: boolean("used").default(false),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-}, (table) => ({
-  emailIdx: index("IDX_email_verification_email").on(table.email),
-  tokenIdx: index("IDX_email_verification_token").on(table.token),
-}));
-
-// Example: Posts table (you can add similar tables)
-export const posts = mysqlTable("posts", {
-  id: int("id").primaryKey().autoincrement(),
-  title: varchar("title", { length: 255 }).notNull(),
-  content: text("content"),
-  userId: int("user_id").notNull(),
-  published: boolean("published").default(false),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`),
-});
-
-// Create insert schema for forms
-export const insertPostSchema = createInsertSchema(posts).pick({
-  title: true,
-  content: true,
-  published: true,
-});
-
-export type UpsertUser = typeof users.$inferInsert;
+// TypeScript types
 export type User = typeof users.$inferSelect;
-export type Post = typeof posts.$inferSelect;
-export type InsertPost = z.infer<typeof insertPostSchema>;
-export type LoginForm = z.infer<typeof loginSchema>;
-export type RegisterForm = z.infer<typeof registerSchema>;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type RoleChange = typeof roleChanges.$inferSelect;
+export type InsertRoleChange = z.infer<typeof insertRoleChangeSchema>;
+export type UserApproval = typeof userApprovals.$inferSelect;
+export type InsertUserApproval = z.infer<typeof insertUserApprovalSchema>;
+
+// Role permissions mapping
+export const rolePermissions = {
+  admin: ['manage_users', 'manage_roles', 'view_all_data', 'manage_system', 'approve_users'],
+  manager: ['manage_teams', 'view_reports', 'manage_projects', 'assign_roles'],
+  coordinator: ['coordinate_activities', 'manage_schedules', 'view_team_data'],
+  instructor: ['manage_students', 'manage_assignments', 'view_class_data'],
+  student: ['view_courses', 'submit_assignments', 'view_grades']
+} as const;
+
+export type UserRole = keyof typeof rolePermissions;
+export type UserStatus = 'pending' | 'approved' | 'rejected' | 'inactive';
