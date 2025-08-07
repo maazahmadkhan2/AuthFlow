@@ -6,6 +6,16 @@ This is a Firebase-only web application built with React and Node.js. The app us
 - Successfully completed migration from Replit Agent to standard Replit environment (January 2025)
 - All dependencies properly installed and configured for Replit compatibility
 - Fixed Firebase authentication configuration with proper API keys
+- **Implemented comprehensive role-based access control system (January 2025)**:
+  - Added 5 user roles: admin, manager, coordinator, instructor, student
+  - Created role-specific dashboards with tailored functionality and permissions
+  - Implemented role management functions for admins (assign roles, toggle user status)
+  - Added role hierarchy system with proper access controls
+  - Updated Firebase schema to include role, permissions, and isActive fields
+  - Created role-based hooks (useRoles, usePermissions) for authentication
+  - All new users default to 'student' role with basic permissions
+  - Admin dashboard includes complete user management with role assignment
+  - Each role has specific dashboard layout with relevant functionality
 - Extended alert display time from 5 to 10 seconds for better user experience
 - Changed authentication UI from tabs to single form with "Create an account" link
 - Updated registration button color from green to blue (primary variant)
@@ -45,8 +55,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Database Architecture
 - **Database**: Firebase Firestore (NoSQL document database)
-- **Collections**: Users collection for user profiles, Posts collection for user content
+- **Collections**: 
+  - Users collection for user profiles with role and permission data
+  - Role_changes collection for audit trail of role modifications
+  - Posts collection for user content (legacy, not currently used)
 - **Schema**: TypeScript interfaces for type safety with Zod validation
+- **Role System**: Each user document includes role, permissions array, and isActive status
 - **Real-time**: Firestore real-time listeners for live data updates
 
 ## Authentication & Authorization
@@ -54,8 +68,14 @@ Preferred communication style: Simple, everyday language.
   - Email/password authentication with email verification
   - Google OAuth sign-in
   - Password reset functionality
+- **Role-Based Access Control (RBAC)**:
+  - 5 user roles: admin, manager, coordinator, instructor, student
+  - Role-specific permissions and dashboard access
+  - Hierarchical role management (admin > manager > coordinator > instructor > student)
+  - Role assignment and user status management for authorized users
+  - Default role assignment (student) for new registrations
 - **Security**: Firebase handles all security, encryption, and session management
-- **Authorization**: Client-side route protection based on Firebase auth state
+- **Authorization**: Client-side route protection based on Firebase auth state and user roles
 
 ## Development & Build Tools
 - **Build System**: Vite for fast development and optimized production builds

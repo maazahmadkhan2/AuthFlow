@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+// User Roles
+export const userRoles = ['admin', 'manager', 'coordinator', 'instructor', 'student'] as const;
+export const roleSchema = z.enum(userRoles);
+
+// Permissions for each role
+export const permissions = {
+  admin: ['manage_users', 'manage_roles', 'view_all_data', 'manage_system'],
+  manager: ['manage_coordinators', 'manage_instructors', 'view_reports', 'manage_courses'],
+  coordinator: ['manage_instructors', 'manage_students', 'view_course_data'],
+  instructor: ['manage_students', 'manage_assignments', 'view_class_data'],
+  student: ['view_courses', 'submit_assignments', 'view_grades']
+} as const;
+
 // Firebase User Document Schema
 export const firebaseUserSchema = z.object({
   email: z.string().email(),
@@ -8,6 +21,9 @@ export const firebaseUserSchema = z.object({
   displayName: z.string(),
   emailVerified: z.boolean(),
   profileImageUrl: z.string().nullable(),
+  role: roleSchema.default('student'),
+  permissions: z.array(z.string()).default([]),
+  isActive: z.boolean().default(true),
   createdAt: z.any(), // Firestore Timestamp
   updatedAt: z.any(), // Firestore Timestamp
 });
@@ -36,10 +52,23 @@ export const registerSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
+  role: roleSchema.optional().default('student'),
   acceptTerms: z.boolean().refine(val => val === true, "You must accept the terms"),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
+});
+
+// Role management schemas
+export const assignRoleSchema = z.object({
+  userId: z.string(),
+  role: roleSchema,
+  assignedBy: z.string(),
+});
+
+export const updateUserRoleSchema = z.object({
+  role: roleSchema,
+  isActive: z.boolean().optional(),
 });
 
 export const forgotPasswordSchema = z.object({
@@ -53,12 +82,15 @@ export const createPostSchema = z.object({
 });
 
 // Type exports
+export type UserRole = z.infer<typeof roleSchema>;
 export type FirebaseUser = z.infer<typeof firebaseUserSchema>;
 export type FirebasePost = z.infer<typeof firebasePostSchema>;
 export type LoginForm = z.infer<typeof loginSchema>;
 export type RegisterForm = z.infer<typeof registerSchema>;
 export type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 export type CreatePostForm = z.infer<typeof createPostSchema>;
+export type AssignRoleForm = z.infer<typeof assignRoleSchema>;
+export type UpdateUserRoleForm = z.infer<typeof updateUserRoleSchema>;
 
 // Add missing imports
 export { z } from 'zod';

@@ -96,7 +96,7 @@ export const signUpWithEmail = async (email: string, password: string, firstName
       displayName: `${firstName} ${lastName}`
     });
     
-    // Create user document in Firestore
+    // Create user document in Firestore with default role
     await setDoc(doc(db, 'users', result.user.uid), {
       email: result.user.email,
       firstName,
@@ -104,6 +104,9 @@ export const signUpWithEmail = async (email: string, password: string, firstName
       displayName: `${firstName} ${lastName}`,
       emailVerified: result.user.emailVerified,
       profileImageUrl: result.user.photoURL || null,
+      role: 'student', // Default role for new users
+      permissions: ['view_courses', 'submit_assignments', 'view_grades'], // Default permissions
+      isActive: true,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
@@ -153,6 +156,9 @@ export const signInWithGoogle = async () => {
         displayName: result.user.displayName,
         emailVerified: result.user.emailVerified,
         profileImageUrl: result.user.photoURL,
+        role: 'student', // Default role for new users
+        permissions: ['view_courses', 'submit_assignments', 'view_grades'], // Default permissions
+        isActive: true,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
@@ -291,6 +297,123 @@ export const getUserPosts = async (uid: string) => {
     }));
   } catch (error) {
     console.error("Error getting user posts:", error);
+    throw error;
+  }
+};
+
+// Role Management Functions
+export const updateUserRole = async (userId: string, role: string, updatedBy: string) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    
+    // Get role permissions
+    const rolePermissions = {
+      admin: ['manage_users', 'manage_roles', 'view_all_data', 'manage_system'],
+      manager: ['manage_coordinators', 'manage_instructors', 'view_reports', 'manage_courses'],
+      coordinator: ['manage_instructors', 'manage_students', 'view_course_data'],
+      instructor: ['manage_students', 'manage_assignments', 'view_class_data'],
+      student: ['view_courses', 'submit_assignments', 'view_grades']
+    };
+
+    await updateDoc(userRef, {
+      role: role,
+      permissions: rolePermissions[role as keyof typeof rolePermissions] || [],
+      updatedAt: Timestamp.now(),
+      lastUpdatedBy: updatedBy
+    });
+
+    // Log role change for audit trail
+    await addDoc(collection(db, 'role_changes'), {
+      userId,
+      previousRole: null, // Could fetch this first if needed
+      newRole: role,
+      changedBy: updatedBy,
+      timestamp: Timestamp.now()
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    throw error;
+  }
+};
+
+export const getAllUsers = async () => {
+  try {
+    const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(usersQuery);
+    
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting all users:', error);
+    throw error;
+  }
+};
+
+export const getUsersByRole = async (role: string) => {
+  try {
+    const usersQuery = query(
+      collection(db, 'users'), 
+      where('role', '==', role),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(usersQuery);
+    
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting users by role:', error);
+    throw error;
+  }
+};
+
+export const toggleUserStatus = async (userId: string, isActive: boolean, updatedBy: string) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    
+    await updateDoc(userRef, {
+      isActive,
+      updatedAt: Timestamp.now(),
+      lastUpdatedBy: updatedBy
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error toggling user status:', error);
+    throw error;
+  }
+};
+
+export const getRoleChangeHistory = async (userId?: string) => {
+  try {
+    let roleChangesQuery;
+    
+    if (userId) {
+      roleChangesQuery = query(
+        collection(db, 'role_changes'),
+        where('userId', '==', userId),
+        orderBy('timestamp', 'desc')
+      );
+    } else {
+      roleChangesQuery = query(
+        collection(db, 'role_changes'),
+        orderBy('timestamp', 'desc'),
+        limit(50)
+      );
+    }
+
+    const querySnapshot = await getDocs(roleChangesQuery);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting role change history:', error);
     throw error;
   }
 };
