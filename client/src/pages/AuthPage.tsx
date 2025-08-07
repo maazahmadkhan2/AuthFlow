@@ -3,7 +3,7 @@ import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Modal } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, registerSchema, forgotPasswordSchema } from '../../../shared/firebase-schema';
-import { signInWithEmail, signUpWithEmail, signInWithGoogle, resetPassword, resendEmailVerification, auth } from '../lib/firebase';
+import { signInWithEmail, signUpWithEmail, signInWithGoogle, resetPassword, resendEmailVerification, auth, checkEmailExists } from '../lib/firebase';
 import { getAuth } from 'firebase/auth';
 import { useLocation } from 'wouter';
 import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
@@ -63,7 +63,7 @@ export const AuthPage: React.FC = () => {
       showAlert('danger', message);
       
       // Show resend verification option if email is not verified
-      if (message.includes('verify your email')) {
+      if (message.includes('verify your email') || message.includes('verification')) {
         setShowResendVerification(true);
       }
     } finally {
@@ -74,9 +74,27 @@ export const AuthPage: React.FC = () => {
   const handleRegister = async (data: any) => {
     setLoading(true);
     try {
+      // Check if email already exists
+      const emailCheck = await checkEmailExists(data.email);
+      
+      if (emailCheck.exists) {
+        if (emailCheck.hasPassword) {
+          showAlert('danger', 'An account with this email already exists. Please sign in instead.');
+          setActiveTab('login');
+          loginForm.setValue('email', data.email);
+          return;
+        } else if (emailCheck.hasGoogle) {
+          showAlert('danger', 'An account with this email exists via Google. Please sign in with Google instead.');
+          return;
+        }
+      }
+
       await signUpWithEmail(data.email, data.password, data.firstName, data.lastName);
       showAlert('success', 'Account created! Please check your email for verification.');
       setActiveTab('login');
+      // Pre-fill login form
+      loginForm.setValue('email', data.email);
+      registerForm.reset();
     } catch (error: any) {
       console.error('Registration error:', error);
       showAlert('danger', error.message || 'Failed to create account');
@@ -93,7 +111,13 @@ export const AuthPage: React.FC = () => {
       setLocation('/dashboard');
     } catch (error: any) {
       console.error('Google sign-in error:', error);
-      showAlert('danger', error.message || 'Failed to sign in with Google');
+      
+      // Handle account linking scenarios
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        showAlert('danger', 'An account with this email already exists. Please sign in with your password first, then link your Google account from your profile.');
+      } else {
+        showAlert('danger', error.message || 'Failed to sign in with Google');
+      }
     } finally {
       setLoading(false);
     }
@@ -125,7 +149,7 @@ export const AuthPage: React.FC = () => {
     try {
       // For simplicity, we'll show a generic message since we can't verify email exists
       // In a real app, you might have a backend endpoint to handle this
-      showAlert('info', 'If this email exists in our system and is unverified, a verification email will be sent.');
+      showAlert('success', 'If this email exists in our system and is unverified, a verification email will be sent.');
       setShowResendVerification(false);
     } catch (error: any) {
       console.error('Error sending verification email:', error);
@@ -266,7 +290,10 @@ export const AuthPage: React.FC = () => {
                       <Button
                         variant="link"
                         className="p-0 text-decoration-none fw-bold small"
-                        onClick={() => setActiveTab('register')}
+                        onClick={() => {
+                          setActiveTab('register');
+                          setShowResendVerification(false);
+                        }}
                       >
                         Create an account
                       </Button>

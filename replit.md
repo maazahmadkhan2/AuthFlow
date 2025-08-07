@@ -17,6 +17,9 @@ This is a Firebase-only web application built with React and Node.js. The app us
 - Added resend verification email option from login screen when verification fails
 - Implemented in-app password reset functionality with proper re-authentication
 - Added navigation links to Dashboard and Profile in navbar for authenticated users
+- Implemented email duplicate checking to prevent account conflicts
+- Added intelligent user flow: existing users are redirected to sign in, Google users are directed to Google auth
+- Enhanced Google authentication to update existing user data when signing in
 
 # User Preferences
 

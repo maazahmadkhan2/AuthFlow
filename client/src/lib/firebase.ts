@@ -13,6 +13,8 @@ import {
   updatePassword as firebaseUpdatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  fetchSignInMethodsForEmail,
+  linkWithCredential,
   User
 } from "firebase/auth";
 import { 
@@ -52,9 +54,41 @@ export const db = getFirestore(app);
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
 
+// Check if email exists and get sign-in methods
+export const checkEmailExists = async (email: string) => {
+  try {
+    const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+    return {
+      exists: signInMethods.length > 0,
+      methods: signInMethods,
+      hasPassword: signInMethods.includes('password'),
+      hasGoogle: signInMethods.includes('google.com')
+    };
+  } catch (error) {
+    console.error("Error checking email:", error);
+    return {
+      exists: false,
+      methods: [],
+      hasPassword: false,
+      hasGoogle: false
+    };
+  }
+};
+
 // Email/Password Authentication
 export const signUpWithEmail = async (email: string, password: string, firstName: string, lastName: string) => {
   try {
+    // First check if email already exists
+    const emailCheck = await checkEmailExists(email);
+    
+    if (emailCheck.exists) {
+      if (emailCheck.hasPassword) {
+        throw new Error('An account with this email already exists. Please sign in instead.');
+      } else if (emailCheck.hasGoogle) {
+        throw new Error('An account with this email exists via Google. Please sign in with Google instead.');
+      }
+    }
+
     const result = await createUserWithEmailAndPassword(auth, email, password);
     
     // Update user profile with name
@@ -122,6 +156,28 @@ export const signInWithGoogle = async () => {
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
+    } else {
+      // Update existing user data with Google info if needed
+      const userData = userDoc.data();
+      const updatedData: any = {
+        emailVerified: result.user.emailVerified,
+        updatedAt: Timestamp.now(),
+      };
+      
+      // Update profile image if user doesn't have one
+      if (!userData.profileImageUrl && result.user.photoURL) {
+        updatedData.profileImageUrl = result.user.photoURL;
+      }
+      
+      // Update display name if empty
+      if (!userData.displayName && result.user.displayName) {
+        updatedData.displayName = result.user.displayName;
+        const [firstName = '', lastName = ''] = result.user.displayName.split(' ');
+        if (!userData.firstName) updatedData.firstName = firstName;
+        if (!userData.lastName) updatedData.lastName = lastName;
+      }
+      
+      await updateDoc(doc(db, 'users', result.user.uid), updatedData);
     }
     
     return result.user;
