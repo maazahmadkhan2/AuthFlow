@@ -24,6 +24,13 @@ export const firebaseUserSchema = z.object({
   role: roleSchema.default('student'),
   permissions: z.array(z.string()).default([]),
   isActive: z.boolean().default(true),
+  isApproved: z.boolean().optional().default(false), // Users need admin approval
+  isDefaultAdmin: z.boolean().optional(), // Flag for system admin
+  approvedAt: z.any().optional(), // Firestore Timestamp
+  approvedBy: z.string().optional(), // Admin who approved
+  rejectedAt: z.any().optional(), // Firestore Timestamp
+  rejectedBy: z.string().optional(), // Admin who rejected
+  rejectionReason: z.string().optional(), // Reason for rejection
   createdAt: z.any(), // Firestore Timestamp
   updatedAt: z.any(), // Firestore Timestamp
 });

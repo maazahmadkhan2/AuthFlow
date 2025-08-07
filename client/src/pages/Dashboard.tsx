@@ -3,6 +3,7 @@ import { Container, Alert, Spinner } from 'react-bootstrap';
 import { useAuth } from '../hooks/useFirebaseAuth';
 import { useUserRole } from '../hooks/useRoles';
 import { RoleBasedDashboard } from '../components/RoleBasedDashboard';
+import { PendingApprovalMessage } from '../components/PendingApprovalMessage';
 import { useLocation } from 'wouter';
 
 export const Dashboard: React.FC = () => {
@@ -52,6 +53,11 @@ export const Dashboard: React.FC = () => {
         </Alert>
       </Container>
     );
+  }
+
+  // Check if user is approved (unless they're the default admin)
+  if (userData.isApproved === false && !userData.isDefaultAdmin) {
+    return <PendingApprovalMessage />;
   }
 
   return (

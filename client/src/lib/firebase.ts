@@ -96,7 +96,7 @@ export const signUpWithEmail = async (email: string, password: string, firstName
       displayName: `${firstName} ${lastName}`
     });
     
-    // Create user document in Firestore with default role
+    // Create user document in Firestore with default role (pending approval)
     await setDoc(doc(db, 'users', result.user.uid), {
       email: result.user.email,
       firstName,
@@ -106,7 +106,8 @@ export const signUpWithEmail = async (email: string, password: string, firstName
       profileImageUrl: result.user.photoURL || null,
       role: 'student', // Default role for new users
       permissions: ['view_courses', 'submit_assignments', 'view_grades'], // Default permissions
-      isActive: true,
+      isActive: false, // Inactive until approved
+      isApproved: false, // Requires admin approval
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
@@ -158,7 +159,8 @@ export const signInWithGoogle = async () => {
         profileImageUrl: result.user.photoURL,
         role: 'student', // Default role for new users
         permissions: ['view_courses', 'submit_assignments', 'view_grades'], // Default permissions
-        isActive: true,
+        isActive: false, // Inactive until approved
+        isApproved: false, // Requires admin approval
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
@@ -414,6 +416,127 @@ export const getRoleChangeHistory = async (userId?: string) => {
     }));
   } catch (error) {
     console.error('Error getting role change history:', error);
+    throw error;
+  }
+};
+
+// Default Admin Creation
+export const createDefaultAdmin = async () => {
+  try {
+    // Check if default admin already exists
+    const adminQuery = query(
+      collection(db, 'users'),
+      where('email', '==', 'admin@system.local'),
+      limit(1)
+    );
+    
+    const adminSnapshot = await getDocs(adminQuery);
+    
+    if (adminSnapshot.empty) {
+      // Create default admin user document
+      const adminData = {
+        email: 'admin@system.local',
+        firstName: 'System',
+        lastName: 'Administrator',
+        displayName: 'System Administrator',
+        emailVerified: true,
+        profileImageUrl: null,
+        role: 'admin',
+        permissions: ['manage_users', 'manage_roles', 'view_all_data', 'manage_system'],
+        isActive: true,
+        isApproved: true,
+        isDefaultAdmin: true,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      };
+
+      // Use a fixed document ID for the default admin
+      await setDoc(doc(db, 'users', 'default-admin'), adminData);
+      
+      console.log('Default admin user created successfully');
+      return true;
+    } else {
+      console.log('Default admin already exists');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error creating default admin:', error);
+    throw error;
+  }
+};
+
+// User Approval System
+export const getPendingUsers = async () => {
+  try {
+    const pendingQuery = query(
+      collection(db, 'users'),
+      where('isApproved', '==', false),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(pendingQuery);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting pending users:', error);
+    throw error;
+  }
+};
+
+export const approveUser = async (userId: string, approvedBy: string) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    
+    await updateDoc(userRef, {
+      isApproved: true,
+      isActive: true,
+      approvedAt: Timestamp.now(),
+      approvedBy: approvedBy,
+      updatedAt: Timestamp.now(),
+    });
+
+    // Log approval for audit trail
+    await addDoc(collection(db, 'user_approvals'), {
+      userId,
+      approvedBy,
+      action: 'approved',
+      timestamp: Timestamp.now()
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error approving user:', error);
+    throw error;
+  }
+};
+
+export const rejectUser = async (userId: string, rejectedBy: string, reason?: string) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    
+    await updateDoc(userRef, {
+      isApproved: false,
+      isActive: false,
+      rejectedAt: Timestamp.now(),
+      rejectedBy: rejectedBy,
+      rejectionReason: reason || 'No reason provided',
+      updatedAt: Timestamp.now(),
+    });
+
+    // Log rejection for audit trail
+    await addDoc(collection(db, 'user_approvals'), {
+      userId,
+      rejectedBy,
+      action: 'rejected',
+      reason: reason || 'No reason provided',
+      timestamp: Timestamp.now()
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error rejecting user:', error);
     throw error;
   }
 };
