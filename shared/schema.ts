@@ -72,7 +72,6 @@ export const userApprovals = pgTable("user_approvals", {
 
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
   createdAt: true,
   updatedAt: true,
   approvedAt: true,

@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, registerSchema, forgotPasswordSchema } from '../../../shared/firebase-schema';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, resetPassword, resendEmailVerification, auth, checkEmailExists } from '../lib/firebase';
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, signInWithEmailAndPassword } from 'firebase/auth';
 import { useLocation, Link } from 'wouter';
 import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
 import { PendingApprovalMessage } from '../components/PendingApprovalMessage';
@@ -15,10 +15,11 @@ export const AuthPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState<{ type: 'success' | 'danger'; message: string } | null>(null);
+  const [alert, setAlert] = useState<{ type: 'success' | 'danger' | 'warning'; message: string } | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [emailVerified, setEmailVerified] = useState(false);
+  const [showResendVerification, setShowResendVerification] = useState(false);
   const [, setLocation] = useLocation();
 
   const loginForm = useForm({
@@ -50,7 +51,7 @@ export const AuthPage: React.FC = () => {
     },
   });
 
-  const showAlert = (type: 'success' | 'danger', message: string) => {
+  const showAlert = (type: 'success' | 'danger' | 'warning', message: string) => {
     setAlert({ type, message });
     setTimeout(() => setAlert(null), 10000);
   };
@@ -77,15 +78,55 @@ export const AuthPage: React.FC = () => {
   const handleLogin = async (data: any) => {
     setLoading(true);
     try {
-      await signInWithEmail(data.email, data.password);
+      const result = await signInWithEmailAndPassword(auth, data.email, data.password);
+      
+      // Check if user exists in database
+      const response = await fetch(`/api/users/${result.user.uid}`);
+      if (response.status === 404) {
+        showAlert('danger', 'Account not found. Please contact support.');
+        return;
+      }
+      
+      if (!response.ok) {
+        throw new Error('Failed to verify account status');
+      }
+      
+      const userData = await response.json();
+      
+      if (userData.status === 'pending') {
+        showAlert('warning', 'Your account is pending approval. Please wait for an administrator to approve your access.');
+        return;
+      }
+      
+      if (userData.status === 'rejected') {
+        const reason = userData.rejectionReason || 'No reason provided';
+        showAlert('danger', `Your account has been rejected. Reason: ${reason}`);
+        return;
+      }
+      
+      if (userData.status === 'inactive') {
+        showAlert('danger', 'Your account has been deactivated. Please contact support.');
+        return;
+      }
+
+      // Show email verification alert only on login if not verified
+      if (!result.user.emailVerified) {
+        showAlert('warning', 'Please verify your email address to continue. Check your inbox for a verification link.');
+        setShowResendVerification(true);
+        return;
+      }
+
       showAlert('success', 'Successfully signed in!');
       setLocation('/dashboard');
     } catch (error: any) {
       console.error('Login error:', error);
-      const message = error.message || 'Failed to sign in';
-      showAlert('danger', message);
-      
-      // Email verification errors are handled by PendingApprovalMessage component
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        showAlert('danger', 'Invalid email or password');
+      } else if (error.code === 'auth/too-many-requests') {
+        showAlert('danger', 'Too many failed attempts. Please try again later.');
+      } else {
+        showAlert('danger', error.message || 'Failed to sign in');
+      }
     } finally {
       setLoading(false);
     }
@@ -141,7 +182,7 @@ export const AuthPage: React.FC = () => {
         throw new Error('Failed to create user record');
       }
 
-      showAlert('success', 'Account created! Please check your email for verification and wait for admin approval.');
+      showAlert('success', 'Account created successfully! Check your email to verify your account. Your account will be activated after admin approval.');
       setActiveTab('login');
       // Pre-fill login form
       loginForm.setValue('email', data.email);
@@ -198,9 +239,13 @@ export const AuthPage: React.FC = () => {
 
     setLoading(true);
     try {
-      // For simplicity, we'll show a generic message since we can't verify email exists
-      // In a real app, you might have a backend endpoint to handle this
-      showAlert('success', 'If this email exists in our system and is unverified, a verification email will be sent.');
+      if (user) {
+        await sendEmailVerification(user);
+        showAlert('success', 'Verification email sent! Check your inbox.');
+      } else {
+        showAlert('success', 'If this email exists in our system and is unverified, a verification email will be sent.');
+      }
+      setShowResendVerification(false);
     } catch (error: any) {
       console.error('Error sending verification email:', error);
       showAlert('danger', error.message || 'Failed to send verification email');
@@ -224,6 +269,18 @@ export const AuthPage: React.FC = () => {
               {alert && (
                 <Alert variant={alert.type} className="mb-4" dismissible onClose={() => setAlert(null)}>
                   {alert.message}
+                  {showResendVerification && activeTab === 'login' && (
+                    <div className="mt-2">
+                      <Button 
+                        variant="warning" 
+                        size="sm" 
+                        onClick={handleResendVerification}
+                        disabled={loading}
+                      >
+                        {loading ? <Spinner size="sm" /> : 'Resend Verification Email'}
+                      </Button>
+                    </div>
+                  )}
                 </Alert>
               )}
 
