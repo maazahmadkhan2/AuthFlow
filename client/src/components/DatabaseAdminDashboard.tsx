@@ -53,6 +53,7 @@ export const DatabaseAdminDashboard: React.FC = () => {
     try {
       setUsersLoading(true);
       const allUsers = await getAllUsers() as User[];
+      console.log('Fetched users:', allUsers.length, allUsers.map(u => ({ id: u.id, email: u.email, role: u.role, status: u.status, isDefaultAdmin: u.isDefaultAdmin })));
       const pending = allUsers.filter(user => user.status === 'pending');
       setUsers(allUsers);
       setPendingUsers(pending);
@@ -260,10 +261,12 @@ export const DatabaseAdminDashboard: React.FC = () => {
     return variants[status] || 'secondary';
   };
 
-  const approvedUsers = users.filter((u: User) => u.status === 'approved');
-  const totalUsers = users.length;
-  const activeUsers = users.filter((u: User) => u.status === 'approved' && u.isActive).length;
-  const admins = users.filter((u: User) => u.role === 'admin').length;
+  // Filter out system admin for accurate counts
+  const realUsers = users.filter((u: User) => !u.isDefaultAdmin);
+  const approvedUsers = realUsers.filter((u: User) => u.status === 'approved');
+  const totalUsers = realUsers.length;
+  const activeUsers = realUsers.filter((u: User) => u.status === 'approved' && u.isActive).length;
+  const admins = realUsers.filter((u: User) => u.role === 'admin').length;
 
   return (
     <Container fluid className="py-4">
