@@ -259,6 +259,7 @@ export const AuthPage: React.FC = () => {
               </p>
             </Card.Header>
             <Card.Body className="p-4">
+              {/* Show alerts at the top */}
               {alert && (
                 <Alert variant={alert.type} className="mb-4" dismissible onClose={() => setAlert(null)}>
                   {alert.message}
@@ -274,6 +275,29 @@ export const AuthPage: React.FC = () => {
                       </Button>
                     </div>
                   )}
+                </Alert>
+              )}
+              
+              {/* Show email verification alert at top when needed */}
+              {user && showResendVerification && !emailVerified && (
+                <Alert variant="warning" className="mb-4">
+                  <div className="d-flex align-items-start">
+                    <FaEnvelope className="me-2 mt-1" />
+                    <div className="flex-grow-1">
+                      <Alert.Heading className="h6 mb-2">Email Verification Required</Alert.Heading>
+                      <p className="mb-2">
+                        Please verify your email address to continue. Check your inbox for a verification link.
+                      </p>
+                      <Button 
+                        variant="warning" 
+                        size="sm" 
+                        onClick={handleResendVerification}
+                        disabled={loading}
+                      >
+                        {loading ? <Spinner size="sm" /> : 'Resend Verification Email'}
+                      </Button>
+                    </div>
+                  </div>
                 </Alert>
               )}
 
@@ -576,8 +600,8 @@ export const AuthPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Show pending approval message for authenticated users */}
-              {user && (
+              {/* Show pending approval message only for non-verification issues */}
+              {user && showResendVerification && emailVerified && (
                 <PendingApprovalMessage user={user} emailVerified={emailVerified} />
               )}
             </Card.Body>
