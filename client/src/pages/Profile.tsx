@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Modal } from 'react-bootstrap';
-import { useAuth } from '../hooks/useFirebaseAuth';
+import { useFirebaseAuth } from '../hooks/useFirebaseAuth';
 import { getUserData, updateUserData, updatePassword, resendEmailVerification } from '../lib/firebase';
+import { updateProfile } from 'firebase/auth';
 import { useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,7 +25,7 @@ const passwordChangeSchema = z.object({
 });
 
 export const Profile: React.FC = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useFirebaseAuth();
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -97,10 +98,18 @@ export const Profile: React.FC = () => {
     
     setSaving(true);
     try {
+      const newDisplayName = `${data.firstName} ${data.lastName}`;
+      
+      // Update Firestore user data
       await updateUserData(user.uid, {
         firstName: data.firstName,
         lastName: data.lastName,
-        displayName: `${data.firstName} ${data.lastName}`,
+        displayName: newDisplayName,
+      });
+      
+      // Also update Firebase Auth profile so navbar shows correct name immediately
+      await updateProfile(user, {
+        displayName: newDisplayName
       });
       
       showAlert('success', 'Profile updated successfully!');

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Navbar, Nav, Button } from 'react-bootstrap';
-import { useAuth } from '../hooks/useFirebaseAuth';
+import { useFirebaseAuth } from '../hooks/useFirebaseAuth';
 import { signOutUser } from '../lib/firebase';
 import { useLocation } from 'wouter';
 
@@ -9,7 +9,7 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, userData, loading } = useFirebaseAuth();
   const [location] = useLocation();
   const [expanded, setExpanded] = useState(false);
 
@@ -53,7 +53,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     Profile
                   </Nav.Link>
                   <Nav.Link disabled className="text-light">
-                    Welcome, {user.displayName || user.email}
+                    Welcome, {userData?.displayName || (userData?.firstName && userData?.lastName ? userData.firstName + ' ' + userData.lastName : null) || user.displayName || user.email}
                   </Nav.Link>
                   <Button 
                     variant="outline-light" 
