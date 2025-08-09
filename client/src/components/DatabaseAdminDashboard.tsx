@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, Table, Form, Modal, Alert, Spinner } from 'react-bootstrap';
-import { FaUsers, FaCog, FaShieldAlt, FaChartBar, FaUserEdit, FaToggleOn, FaToggleOff, FaHistory } from 'react-icons/fa';
+import { FaUsers, FaCog, FaShieldAlt, FaChartBar, FaUserEdit, FaToggleOn, FaToggleOff, FaHistory, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 // All data operations now handled with Firestore directly
-import { getAllUsers, updateUserRole, toggleUserStatus, getPendingUsers, getUsersByRole, updateUserData } from '../lib/firebase';
+import { getAllUsers, updateUserRole, toggleUserStatus, getPendingUsers, getUsersByRole, updateUserData, createAdminUser, deleteFirebaseUser } from '../lib/firebase';
 import { Timestamp } from 'firebase/firestore';
 // Types for Firestore user data
 type UserRole = 'admin' | 'manager' | 'coordinator' | 'instructor' | 'student';
@@ -26,6 +26,9 @@ interface User {
 
 export const DatabaseAdminDashboard: React.FC = () => {
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newRole, setNewRole] = useState<UserRole>('student');
   const [activeTab, setActiveTab] = useState('users');
@@ -35,6 +38,15 @@ export const DatabaseAdminDashboard: React.FC = () => {
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  // Form data for create/edit user
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    role: 'student' as UserRole
+  });
 
   // Fetch users from Firestore
   const fetchUsers = async () => {
@@ -128,6 +140,103 @@ export const DatabaseAdminDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Create user function
+  const handleCreateUser = async () => {
+    setLoading(true);
+    try {
+      await createAdminUser(formData);
+      showAlert('success', 'User created successfully and automatically approved');
+      setShowCreateModal(false);
+      setFormData({ email: '', password: '', firstName: '', lastName: '', role: 'student' });
+      fetchUsers();
+    } catch (error: any) {
+      showAlert('danger', error.message || 'Failed to create user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Edit user function
+  const handleEditUser = async () => {
+    if (!selectedUser) return;
+    setLoading(true);
+    try {
+      await updateUserData(selectedUser.id, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        displayName: `${formData.firstName} ${formData.lastName}`,
+        role: formData.role,
+        updatedAt: Timestamp.now()
+      });
+      showAlert('success', 'User updated successfully');
+      setShowEditModal(false);
+      fetchUsers();
+    } catch (error) {
+      showAlert('danger', 'Failed to update user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete user function
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    setLoading(true);
+    try {
+      await deleteFirebaseUser(selectedUser.id);
+      showAlert('success', 'User deleted successfully');
+      setShowDeleteModal(false);
+      fetchUsers();
+    } catch (error) {
+      showAlert('danger', 'Failed to delete user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Open modals with user data
+  const openCreateModal = () => {
+    setFormData({ email: '', password: '', firstName: '', lastName: '', role: 'student' });
+    setShowCreateModal(true);
+  };
+
+  const openEditModal = (user: User) => {
+    setSelectedUser(user);
+    setFormData({
+      email: user.email,
+      password: '',
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role
+    });
+    setShowEditModal(true);
+  };
+
+  const openDeleteModal = (user: User) => {
+    setSelectedUser(user);
+    setShowDeleteModal(true);
+  };
+
+  // Format date helper
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'N/A';
+    
+    let date;
+    if (timestamp.toDate) {
+      // Firestore Timestamp
+      date = timestamp.toDate();
+    } else if (timestamp.seconds) {
+      // Firestore Timestamp-like object
+      date = new Date(timestamp.seconds * 1000);
+    } else if (timestamp instanceof Date) {
+      date = timestamp;
+    } else {
+      return 'Invalid Date';
+    }
+    
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
 
   const getRoleBadgeVariant = (role: UserRole) => {
@@ -239,8 +348,11 @@ export const DatabaseAdminDashboard: React.FC = () => {
         <Col>
           {activeTab === 'users' && (
             <Card>
-              <Card.Header>
+              <Card.Header className="d-flex justify-content-between align-items-center">
                 <h5>Active Users</h5>
+                <Button variant="primary" size="sm" onClick={openCreateModal}>
+                  <FaPlus className="me-1" />Create User
+                </Button>
               </Card.Header>
               <Card.Body>
                 {usersLoading ? (
@@ -276,18 +388,35 @@ export const DatabaseAdminDashboard: React.FC = () => {
                             </Badge>
                           </td>
                           <td>
-                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
+                            {formatDate(user.createdAt)}
                           </td>
                           <td>
                             <Button
                               variant="outline-primary"
                               size="sm"
-                              className="me-2"
+                              className="me-1"
                               onClick={() => openRoleModal(user)}
                               data-testid={`button-edit-role-${user.id}`}
                               disabled={user.isDefaultAdmin}
                             >
-                              <FaUserEdit /> Role
+                              <FaUserEdit />
+                            </Button>
+                            <Button
+                              variant="outline-secondary"
+                              size="sm"
+                              className="me-1"
+                              onClick={() => openEditModal(user)}
+                              disabled={user.isDefaultAdmin}
+                            >
+                              <FaEdit />
+                            </Button>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => openDeleteModal(user)}
+                              disabled={user.isDefaultAdmin}
+                            >
+                              <FaTrash />
                             </Button>
                           </td>
                         </tr>
@@ -333,7 +462,7 @@ export const DatabaseAdminDashboard: React.FC = () => {
                           </Badge>
                         </td>
                         <td>
-                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
+                          {formatDate(user.createdAt)}
                         </td>
                         <td>
                           <Button
@@ -412,6 +541,161 @@ export const DatabaseAdminDashboard: React.FC = () => {
             disabled={loading}
           >
             {loading ? 'Updating...' : 'Update Role'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Create User Modal */}
+      <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Create New User</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control 
+                type="email" 
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                placeholder="Enter email address"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Password</Form.Label>
+              <Form.Control 
+                type="password" 
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                placeholder="Enter password"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>First Name</Form.Label>
+              <Form.Control 
+                type="text" 
+                value={formData.firstName}
+                onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                placeholder="Enter first name"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Last Name</Form.Label>
+              <Form.Control 
+                type="text" 
+                value={formData.lastName}
+                onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                placeholder="Enter last name"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Role</Form.Label>
+              <Form.Select 
+                value={formData.role} 
+                onChange={(e) => setFormData({...formData, role: e.target.value as UserRole})}
+              >
+                <option value="student">Student</option>
+                <option value="instructor">Instructor</option>
+                <option value="coordinator">Coordinator</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+              </Form.Select>
+            </Form.Group>
+            <div className="alert alert-info">
+              <strong>Note:</strong> Admin-created users are automatically approved and do not require email verification.
+            </div>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleCreateUser} disabled={loading}>
+            {loading ? 'Creating...' : 'Create User'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit User</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedUser && (
+            <Form>
+              <Form.Group className="mb-3">
+                <Form.Label>Email</Form.Label>
+                <Form.Control type="email" value={formData.email} disabled />
+                <Form.Text className="text-muted">Email cannot be changed</Form.Text>
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>First Name</Form.Label>
+                <Form.Control 
+                  type="text" 
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Last Name</Form.Label>
+                <Form.Control 
+                  type="text" 
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Role</Form.Label>
+                <Form.Select 
+                  value={formData.role} 
+                  onChange={(e) => setFormData({...formData, role: e.target.value as UserRole})}
+                >
+                  <option value="student">Student</option>
+                  <option value="instructor">Instructor</option>
+                  <option value="coordinator">Coordinator</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                </Form.Select>
+              </Form.Group>
+            </Form>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleEditUser} disabled={loading}>
+            {loading ? 'Updating...' : 'Update User'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Delete User Modal */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Delete User</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedUser && (
+            <div>
+              <p>Are you sure you want to delete this user?</p>
+              <div className="alert alert-warning">
+                <strong>User:</strong> {selectedUser.displayName} ({selectedUser.email})<br />
+                <strong>Role:</strong> {selectedUser.role}
+              </div>
+              <p className="text-danger">
+                <strong>Warning:</strong> This action cannot be undone. The user will be permanently removed from the system.
+              </p>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDeleteUser} disabled={loading}>
+            {loading ? 'Deleting...' : 'Delete User'}
           </Button>
         </Modal.Footer>
       </Modal>

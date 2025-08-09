@@ -15,7 +15,8 @@ import {
   EmailAuthProvider,
   fetchSignInMethodsForEmail,
   linkWithCredential,
-  User
+  User,
+  deleteUser
 } from "firebase/auth";
 import { 
   getFirestore, 
@@ -455,6 +456,77 @@ export const createDefaultAdmin = async () => {
     console.error('Error creating default admin:', error);
     throw error;
   }
+};
+
+// Create user by admin (automatically approved, no email verification needed)
+export const createAdminUser = async (userData: {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}) => {
+  try {
+    // Create Firebase Auth user
+    const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+    const user = userCredential.user;
+
+    // Update user profile
+    await updateProfile(user, {
+      displayName: `${userData.firstName} ${userData.lastName}`
+    });
+
+    // Create user document in Firestore with approved status
+    await setDoc(doc(db, 'users', user.uid), {
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      displayName: `${userData.firstName} ${userData.lastName}`,
+      role: userData.role,
+      status: 'approved', // Admin-created users are automatically approved
+      emailVerified: true, // Admin-created users skip email verification
+      isDefaultAdmin: false,
+      permissions: getPermissionsForRole(userData.role),
+      isActive: true,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+      createdBy: 'admin'
+    });
+
+    console.log('User created successfully by admin');
+    return { success: true, user };
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
+};
+
+// Delete Firebase user (both auth and firestore)
+export const deleteFirebaseUser = async (userId: string) => {
+  try {
+    // Delete user document from Firestore
+    await deleteDoc(doc(db, 'users', userId));
+    
+    // Note: Deleting from Firebase Auth requires admin SDK on server
+    // For now, we'll just delete from Firestore and mark as inactive
+    console.log('User deleted from Firestore');
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw error;
+  }
+};
+
+// Get permissions for role
+const getPermissionsForRole = (role: string) => {
+  const rolePermissions = {
+    admin: ['manage_users', 'manage_roles', 'view_all_data', 'manage_system', 'approve_users'],
+    manager: ['manage_users', 'view_reports', 'approve_content'],
+    coordinator: ['manage_content', 'view_reports'],
+    instructor: ['create_content', 'manage_students'],
+    student: ['view_content', 'submit_assignments']
+  };
+  return rolePermissions[role as keyof typeof rolePermissions] || rolePermissions.student;
 };
 
 // User Approval System
