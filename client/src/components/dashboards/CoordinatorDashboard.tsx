@@ -12,7 +12,7 @@ export const CoordinatorDashboard: React.FC<CoordinatorDashboardProps> = ({ user
   const [instructors, setInstructors] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [alert, setAlert] = useState<{ type: 'success' | 'danger'; message: string } | null>(null);
+  const [alert, setAlert] = useState<{ type: 'success' | 'danger' | 'info'; message: string } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -36,7 +36,7 @@ export const CoordinatorDashboard: React.FC<CoordinatorDashboardProps> = ({ user
     }
   };
 
-  const showAlert = (type: 'success' | 'danger', message: string) => {
+  const showAlert = (type: 'success' | 'danger' | 'info', message: string) => {
     setAlert({ type, message });
     setTimeout(() => setAlert(null), 10000);
   };
@@ -79,8 +79,8 @@ export const CoordinatorDashboard: React.FC<CoordinatorDashboardProps> = ({ user
           <Card className="text-center">
             <Card.Body>
               <FaBookOpen className="mb-2" size={40} color="#17a2b8" />
-              <Card.Title>Courses</Card.Title>
-              <Card.Text>Management</Card.Text>
+              <Card.Title>12</Card.Title>
+              <Card.Text>Active Courses</Card.Text>
             </Card.Body>
           </Card>
         </Col>
@@ -88,8 +88,8 @@ export const CoordinatorDashboard: React.FC<CoordinatorDashboardProps> = ({ user
           <Card className="text-center">
             <Card.Body>
               <FaClipboardList className="mb-2" size={40} color="#ffc107" />
-              <Card.Title>Schedule</Card.Title>
-              <Card.Text>Overview</Card.Text>
+              <Card.Title>8</Card.Title>
+              <Card.Text>Weekly Classes</Card.Text>
             </Card.Body>
           </Card>
         </Col>
@@ -196,16 +196,16 @@ export const CoordinatorDashboard: React.FC<CoordinatorDashboardProps> = ({ user
               <h5>Course Management Actions</h5>
             </Card.Header>
             <Card.Body>
-              <Button variant="primary" className="me-3" data-testid="button-manage-courses">
+              <Button variant="primary" className="me-3" data-testid="button-manage-courses" onClick={() => showAlert('info', 'Course management feature coming soon!')}>
                 Manage Courses
               </Button>
-              <Button variant="outline-primary" className="me-3" data-testid="button-assign-instructors">
+              <Button variant="outline-primary" className="me-3" data-testid="button-assign-instructors" onClick={() => showAlert('info', 'Instructor assignment feature coming soon!')}>
                 Assign Instructors
               </Button>
-              <Button variant="outline-secondary" className="me-3" data-testid="button-view-schedules">
+              <Button variant="outline-secondary" className="me-3" data-testid="button-view-schedules" onClick={() => showAlert('info', 'Schedule management feature coming soon!')}>
                 View Schedules
               </Button>
-              <Button variant="outline-info" data-testid="button-course-reports">
+              <Button variant="outline-info" data-testid="button-course-reports" onClick={() => showAlert('info', 'Course reports feature coming soon!')}>
                 Course Reports
               </Button>
             </Card.Body>

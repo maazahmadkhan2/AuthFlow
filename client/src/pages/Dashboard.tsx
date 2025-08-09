@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Alert, Spinner } from 'react-bootstrap';
-import { useAuth } from '../hooks/useFirebaseAuth';
+import { useFirebaseAuth } from '../hooks/useFirebaseAuth';
 import { useUserRole } from '../hooks/useRoles';
 import { RoleBasedDashboard } from '../components/RoleBasedDashboard';
 import { PendingApprovalMessage } from '../components/PendingApprovalMessage';
 import { useLocation } from 'wouter';
 
 export const Dashboard: React.FC = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useFirebaseAuth();
   const { userData, loading: roleLoading } = useUserRole(user);
   const [alert, setAlert] = useState<{ type: 'success' | 'danger'; message: string } | null>(null);
   const [, setLocation] = useLocation();
@@ -56,8 +56,8 @@ export const Dashboard: React.FC = () => {
   }
 
   // Check if user is approved (unless they're the default admin)
-  if (userData.isApproved === false && !userData.isDefaultAdmin) {
-    return <PendingApprovalMessage />;
+  if ((userData as any).status === 'pending') {
+    return <PendingApprovalMessage user={user} emailVerified={user.emailVerified} />;
   }
 
   return (

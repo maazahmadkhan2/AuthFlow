@@ -13,7 +13,7 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({ userData, us
   const [instructors, setInstructors] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [alert, setAlert] = useState<{ type: 'success' | 'danger'; message: string } | null>(null);
+  const [alert, setAlert] = useState<{ type: 'success' | 'danger' | 'info'; message: string } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -39,7 +39,7 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({ userData, us
     }
   };
 
-  const showAlert = (type: 'success' | 'danger', message: string) => {
+  const showAlert = (type: 'success' | 'danger' | 'info', message: string) => {
     setAlert({ type, message });
     setTimeout(() => setAlert(null), 10000);
   };
@@ -91,8 +91,8 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({ userData, us
           <Card className="text-center">
             <Card.Body>
               <FaChartLine className="mb-2" size={40} color="#ffc107" />
-              <Card.Title>Reports</Card.Title>
-              <Card.Text>Analytics</Card.Text>
+              <Card.Title>25</Card.Title>
+              <Card.Text>Monthly Reports</Card.Text>
             </Card.Body>
           </Card>
         </Col>
@@ -192,13 +192,13 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({ userData, us
               <h5>Quick Actions</h5>
             </Card.Header>
             <Card.Body>
-              <Button variant="primary" className="me-3" data-testid="button-manage-courses">
+              <Button variant="primary" className="me-3" data-testid="button-manage-courses" onClick={() => showAlert('info', 'Course management feature coming soon!')}>
                 Manage Courses
               </Button>
-              <Button variant="outline-primary" className="me-3" data-testid="button-view-reports">
+              <Button variant="outline-primary" className="me-3" data-testid="button-view-reports" onClick={() => showAlert('info', 'Reports feature coming soon!')}>
                 View Reports
               </Button>
-              <Button variant="outline-secondary" data-testid="button-system-settings">
+              <Button variant="outline-secondary" data-testid="button-system-settings" onClick={() => showAlert('info', 'System settings feature coming soon!')}>
                 System Settings
               </Button>
             </Card.Body>

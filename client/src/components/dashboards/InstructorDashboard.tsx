@@ -11,7 +11,7 @@ interface InstructorDashboardProps {
 export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ userData, user }) => {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [alert, setAlert] = useState<{ type: 'success' | 'danger'; message: string } | null>(null);
+  const [alert, setAlert] = useState<{ type: 'success' | 'danger' | 'info'; message: string } | null>(null);
 
   useEffect(() => {
     loadStudents();
@@ -30,7 +30,7 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ userDa
     }
   };
 
-  const showAlert = (type: 'success' | 'danger', message: string) => {
+  const showAlert = (type: 'success' | 'danger' | 'info', message: string) => {
     setAlert({ type, message });
     setTimeout(() => setAlert(null), 10000);
   };
@@ -64,8 +64,8 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ userDa
           <Card className="text-center">
             <Card.Body>
               <FaClipboardList className="mb-2" size={40} color="#007bff" />
-              <Card.Title>Assignments</Card.Title>
-              <Card.Text>Management</Card.Text>
+              <Card.Title>5</Card.Title>
+              <Card.Text>Active Assignments</Card.Text>
             </Card.Body>
           </Card>
         </Col>
@@ -73,8 +73,8 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ userDa
           <Card className="text-center">
             <Card.Body>
               <FaBookOpen className="mb-2" size={40} color="#17a2b8" />
-              <Card.Title>Classes</Card.Title>
-              <Card.Text>Schedule</Card.Text>
+              <Card.Title>3</Card.Title>
+              <Card.Text>Classes Teaching</Card.Text>
             </Card.Body>
           </Card>
         </Col>
@@ -82,8 +82,8 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ userDa
           <Card className="text-center">
             <Card.Body>
               <FaChartBar className="mb-2" size={40} color="#ffc107" />
-              <Card.Title>Grades</Card.Title>
-              <Card.Text>Analytics</Card.Text>
+              <Card.Title>92%</Card.Title>
+              <Card.Text>Average Grade</Card.Text>
             </Card.Body>
           </Card>
         </Col>
@@ -165,16 +165,16 @@ export const InstructorDashboard: React.FC<InstructorDashboardProps> = ({ userDa
               </Card.Header>
               <Card.Body>
                 <div className="d-grid gap-2">
-                  <Button variant="primary" data-testid="button-create-assignment">
+                  <Button variant="primary" data-testid="button-create-assignment" onClick={() => showAlert('info', 'Assignment creation feature coming soon!')}>
                     Create Assignment
                   </Button>
-                  <Button variant="outline-primary" data-testid="button-grade-submissions">
+                  <Button variant="outline-primary" data-testid="button-grade-submissions" onClick={() => showAlert('info', 'Grading submissions feature coming soon!')}>
                     Grade Submissions
                   </Button>
-                  <Button variant="outline-secondary" data-testid="button-view-classes">
+                  <Button variant="outline-secondary" data-testid="button-view-classes" onClick={() => showAlert('info', 'Class management feature coming soon!')}>
                     View Classes
                   </Button>
-                  <Button variant="outline-info" data-testid="button-student-progress">
+                  <Button variant="outline-info" data-testid="button-student-progress" onClick={() => showAlert('info', 'Student progress tracking coming soon!')}>
                     Student Progress
                   </Button>
                 </div>
