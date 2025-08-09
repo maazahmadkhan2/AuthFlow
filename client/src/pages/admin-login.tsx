@@ -33,14 +33,18 @@ export const AdminLogin: React.FC = () => {
     if (credentials.email === 'admin@system.local' && credentials.password === 'AdminPass123!') {
       setLoading(true);
       try {
-        // Verify admin exists in database
-        const response = await apiRequest('/api/users/default-admin');
-        if (response) {
+        // Check admin exists in Firestore
+        const { getUserData } = await import('../lib/firebase');
+        const adminData = await getUserData('system-admin-001');
+        
+        if (adminData && adminData.role === 'admin') {
           setIsLoggedIn(true);
           showAlert('success', 'Welcome, Administrator!');
+        } else {
+          showAlert('danger', 'Admin account not found in Firestore. Please check if the system is properly initialized.');
         }
       } catch (error) {
-        showAlert('danger', 'Admin account not found. Please check if the system is properly initialized.');
+        showAlert('danger', 'Error accessing admin account. Please check the system configuration.');
       } finally {
         setLoading(false);
       }

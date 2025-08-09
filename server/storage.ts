@@ -173,7 +173,7 @@ export class DatabaseStorage implements IStorage {
 
   async createDefaultAdmin(): Promise<boolean> {
     try {
-      // Check if default admin already exists
+      // Check if default admin already exists in database
       const existingAdmin = await this.getUserByEmail('admin@system.local');
       
       if (existingAdmin) {
@@ -181,11 +181,12 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
 
-      // Create default admin with fixed ID
+      // For PostgreSQL + Firebase setup, create a database-only admin that can be accessed via admin login
+      // This avoids Firebase Auth complications while allowing admin management
       const [admin] = await db
         .insert(users)
         .values({
-          id: 'default-admin', // Fixed ID for default admin
+          id: 'system-admin-001', // Use a Firebase-compatible UID format
           email: 'admin@system.local',
           firstName: 'System',
           lastName: 'Administrator',

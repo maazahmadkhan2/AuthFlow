@@ -62,13 +62,14 @@ export const AuthPage: React.FC = () => {
       if (currentUser) {
         setUser(currentUser);
         setEmailVerified(currentUser.emailVerified);
-        // If user is verified and approved, redirect to dashboard
-        if (currentUser.emailVerified) {
-          // Check database approval status would happen in PendingApprovalMessage
-        }
+        // Reset verification alert when auth state changes
+        setShowResendVerification(false);
+        setAlert(null);
       } else {
         setUser(null);
         setEmailVerified(false);
+        setShowResendVerification(false);
+        setAlert(null);
       }
     });
 

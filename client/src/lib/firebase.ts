@@ -420,45 +420,37 @@ export const getRoleChangeHistory = async (userId?: string) => {
   }
 };
 
-// Default Admin Creation
+// Default Admin Creation - Store in Firestore
 export const createDefaultAdmin = async () => {
   try {
-    // Check if default admin already exists
-    const adminQuery = query(
-      collection(db, 'users'),
-      where('email', '==', 'admin@system.local'),
-      limit(1)
-    );
+    const adminId = 'system-admin-001';
     
-    const adminSnapshot = await getDocs(adminQuery);
+    // Check if admin already exists in Firestore
+    const adminDoc = await getDoc(doc(db, 'users', adminId));
     
-    if (adminSnapshot.empty) {
-      // Create default admin user document
-      const adminData = {
-        email: 'admin@system.local',
-        firstName: 'System',
-        lastName: 'Administrator',
-        displayName: 'System Administrator',
-        emailVerified: true,
-        profileImageUrl: null,
-        role: 'admin',
-        permissions: ['manage_users', 'manage_roles', 'view_all_data', 'manage_system'],
-        isActive: true,
-        isApproved: true,
-        isDefaultAdmin: true,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-      };
-
-      // Use a fixed document ID for the default admin
-      await setDoc(doc(db, 'users', 'default-admin'), adminData);
-      
-      console.log('Default admin user created successfully');
-      return true;
-    } else {
-      console.log('Default admin already exists');
+    if (adminDoc.exists()) {
+      console.log('Default admin already exists in Firestore');
       return false;
     }
+
+    // Create admin user document in Firestore
+    await setDoc(doc(db, 'users', adminId), {
+      email: 'admin@system.local',
+      firstName: 'System',
+      lastName: 'Administrator',
+      displayName: 'System Administrator',
+      role: 'admin',
+      status: 'approved',
+      emailVerified: true,
+      isDefaultAdmin: true,
+      permissions: ['manage_users', 'manage_roles', 'view_all_data', 'manage_system', 'approve_users'],
+      isActive: true,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+    
+    console.log('Default admin created successfully in Firestore');
+    return true;
   } catch (error) {
     console.error('Error creating default admin:', error);
     throw error;
