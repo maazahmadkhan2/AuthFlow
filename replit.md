@@ -3,6 +3,13 @@
 This is a Firebase-only web application built with React and Node.js. The app uses Firebase Authentication for user management and Firestore database for data storage. It features a modern, mobile-first responsive UI built with React Bootstrap components. The authentication system includes login, registration, Google OAuth, and password reset functionality with a streamlined UI - password reset is handled via popup modal instead of a separate tab. The backend is minimal and only serves the React app, with all authentication and database operations handled client-side through Firebase.
 
 ## Recent Changes
+- **Added full CRUD functionality to admin dashboard (August 2025)**:
+  - Implemented Create User functionality with automatic approval and email verification bypass
+  - Added Edit User capability to modify user details and roles
+  - Implemented Delete User functionality with confirmation modal
+  - Fixed invalid date display issue in user tables with proper timestamp formatting
+  - Added helpful tooltips to all admin action buttons for better UX
+  - Corrected stats calculation to properly count active users vs approved users
 - **Successfully migrated from Replit Agent to standard Replit environment (August 2025)**:
   - Migrated project to proper client/server separation for enhanced security
   - Updated Firebase Authentication to work with standard Replit deployment

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Badge, Table, Form, Modal, Alert, Spinner } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Badge, Table, Form, Modal, Alert, Spinner, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaUsers, FaCog, FaShieldAlt, FaChartBar, FaUserEdit, FaToggleOn, FaToggleOff, FaHistory, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 // All data operations now handled with Firestore directly
 import { getAllUsers, updateUserRole, toggleUserStatus, getPendingUsers, getUsersByRole, updateUserData, createAdminUser, deleteFirebaseUser } from '../lib/firebase';
@@ -262,8 +262,8 @@ export const DatabaseAdminDashboard: React.FC = () => {
 
   const approvedUsers = users.filter((u: User) => u.status === 'approved');
   const totalUsers = users.length;
-  const activeUsers = approvedUsers.filter((u: User) => u.status === 'approved').length;
-  const admins = approvedUsers.filter((u: User) => u.role === 'admin').length;
+  const activeUsers = users.filter((u: User) => u.status === 'approved' && u.isActive).length;
+  const admins = users.filter((u: User) => u.role === 'admin').length;
 
   return (
     <Container fluid className="py-4">
@@ -350,9 +350,14 @@ export const DatabaseAdminDashboard: React.FC = () => {
             <Card>
               <Card.Header className="d-flex justify-content-between align-items-center">
                 <h5>Active Users</h5>
-                <Button variant="primary" size="sm" onClick={openCreateModal}>
-                  <FaPlus className="me-1" />Create User
-                </Button>
+                <OverlayTrigger
+                  placement="top"
+                  overlay={<Tooltip>Create new user (automatically approved)</Tooltip>}
+                >
+                  <Button variant="primary" size="sm" onClick={openCreateModal}>
+                    <FaPlus className="me-1" />Create User
+                  </Button>
+                </OverlayTrigger>
               </Card.Header>
               <Card.Body>
                 {usersLoading ? (
@@ -391,33 +396,48 @@ export const DatabaseAdminDashboard: React.FC = () => {
                             {formatDate(user.createdAt)}
                           </td>
                           <td>
-                            <Button
-                              variant="outline-primary"
-                              size="sm"
-                              className="me-1"
-                              onClick={() => openRoleModal(user)}
-                              data-testid={`button-edit-role-${user.id}`}
-                              disabled={user.isDefaultAdmin}
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={<Tooltip>Change user role</Tooltip>}
                             >
-                              <FaUserEdit />
-                            </Button>
-                            <Button
-                              variant="outline-secondary"
-                              size="sm"
-                              className="me-1"
-                              onClick={() => openEditModal(user)}
-                              disabled={user.isDefaultAdmin}
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                className="me-1"
+                                onClick={() => openRoleModal(user)}
+                                data-testid={`button-edit-role-${user.id}`}
+                                disabled={user.isDefaultAdmin}
+                              >
+                                <FaUserEdit />
+                              </Button>
+                            </OverlayTrigger>
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={<Tooltip>Edit user details</Tooltip>}
                             >
-                              <FaEdit />
-                            </Button>
-                            <Button
-                              variant="outline-danger"
-                              size="sm"
-                              onClick={() => openDeleteModal(user)}
-                              disabled={user.isDefaultAdmin}
+                              <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                className="me-1"
+                                onClick={() => openEditModal(user)}
+                                disabled={user.isDefaultAdmin}
+                              >
+                                <FaEdit />
+                              </Button>
+                            </OverlayTrigger>
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={<Tooltip>Delete user</Tooltip>}
                             >
-                              <FaTrash />
-                            </Button>
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={() => openDeleteModal(user)}
+                                disabled={user.isDefaultAdmin}
+                              >
+                                <FaTrash />
+                              </Button>
+                            </OverlayTrigger>
                           </td>
                         </tr>
                       ))}
