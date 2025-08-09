@@ -261,8 +261,11 @@ export const DatabaseAdminDashboard: React.FC = () => {
     return variants[status] || 'secondary';
   };
 
-  // Filter out system admin for accurate counts
-  const realUsers = users.filter((u: User) => !u.isDefaultAdmin);
+  // Filter out system admins and duplicates for accurate counts
+  const realUsers = users.filter((u: User) => 
+    u.email !== 'admin@system.local' && // Exclude all admin@system.local accounts
+    !u.isDefaultAdmin // Exclude default admin flag
+  );
   const approvedUsers = realUsers.filter((u: User) => u.status === 'approved');
   const totalUsers = realUsers.length;
   const activeUsers = realUsers.filter((u: User) => u.status === 'approved' && u.isActive).length;
@@ -331,7 +334,7 @@ export const DatabaseAdminDashboard: React.FC = () => {
                 onClick={() => setActiveTab('users')}
                 data-testid="tab-users"
               >
-                Users ({approvedUsers.length})
+                Users ({users.filter(u => u.status === 'approved').length})
               </button>
             </li>
             <li className="nav-item">
@@ -381,7 +384,7 @@ export const DatabaseAdminDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {approvedUsers.map((user: User) => (
+                      {users.filter(u => u.status === 'approved').map((user: User) => (
                         <tr key={user.id} data-testid={`user-row-${user.id}`}>
                           <td>{user.displayName}</td>
                           <td>{user.email}</td>
@@ -444,7 +447,7 @@ export const DatabaseAdminDashboard: React.FC = () => {
                           </td>
                         </tr>
                       ))}
-                      {approvedUsers.length === 0 && (
+                      {users.filter(u => u.status === 'approved').length === 0 && (
                         <tr>
                           <td colSpan={6} className="text-center text-muted">
                             No active users found
