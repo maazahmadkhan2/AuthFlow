@@ -50,7 +50,7 @@ export class DatabaseStorage implements IStorage {
       .insert(users)
       .values({
         ...userData,
-        status: 'pending', // All new users are pending approval
+        status: 'pending' as const, // All new users are pending approval
         updatedAt: new Date(),
       })
       .returning();

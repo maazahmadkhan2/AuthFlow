@@ -77,6 +77,14 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
   approvedAt: true,
   rejectedAt: true,
+  approvedBy: true,
+  rejectedBy: true,
+  rejectionReason: true,
+}).partial({
+  status: true, // Status is optional in input (defaults to pending)
+  emailVerified: true,
+  isDefaultAdmin: true,
+  profileImageUrl: true,
 });
 
 export const insertRoleChangeSchema = createInsertSchema(roleChanges).omit({
