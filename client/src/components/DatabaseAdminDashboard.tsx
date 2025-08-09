@@ -34,12 +34,13 @@ export const DatabaseAdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Fetch users from Firestore
   const fetchUsers = async () => {
     try {
       setUsersLoading(true);
-      const allUsers = await getAllUsers();
+      const allUsers = await getAllUsers() as User[];
       const pending = allUsers.filter(user => user.status === 'pending');
       setUsers(allUsers);
       setPendingUsers(pending);
@@ -119,9 +120,14 @@ export const DatabaseAdminDashboard: React.FC = () => {
     setShowRoleModal(true);
   };
 
-  const handleRoleUpdate = () => {
+  const handleRoleUpdate = async () => {
     if (!selectedUser) return;
-    updateRole(selectedUser.id, newRole);
+    setLoading(true);
+    try {
+      await updateRole(selectedUser.id, newRole);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getRoleBadgeVariant = (role: UserRole) => {
@@ -403,9 +409,9 @@ export const DatabaseAdminDashboard: React.FC = () => {
           <Button
             variant="primary"
             onClick={handleRoleUpdate}
-            disabled={updateRoleMutation.isPending}
+            disabled={loading}
           >
-            {updateRoleMutation.isPending ? 'Updating...' : 'Update Role'}
+            {loading ? 'Updating...' : 'Update Role'}
           </Button>
         </Modal.Footer>
       </Modal>

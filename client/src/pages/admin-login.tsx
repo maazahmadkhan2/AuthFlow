@@ -14,7 +14,7 @@ export const AdminLogin: React.FC = () => {
   });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [setupLoading, setSetupLoading] = useState(false);
+
   const [alert, setAlert] = useState<{ type: 'success' | 'danger' | 'info'; message: string } | null>(null);
   const { user, userData } = useFirebaseAuth();
 
@@ -42,11 +42,13 @@ export const AdminLogin: React.FC = () => {
     setLoading(true);
     
     try {
+      // First try to create admin if it doesn't exist, then sign in
+      await createFirebaseAdmin();
       const result = await signInAsFirebaseAdmin(credentials.email, credentials.password);
       
       if (result.success) {
         setIsLoggedIn(true);
-        showAlert('success', 'Welcome, Administrator! You are now signed in through Firebase Authentication.');
+        showAlert('success', 'Welcome, Administrator!');
       } else {
         showAlert('danger', result.error || 'Failed to sign in as admin');
       }
@@ -57,28 +59,7 @@ export const AdminLogin: React.FC = () => {
     }
   };
 
-  const handleSetupAdmin = async () => {
-    setSetupLoading(true);
-    
-    try {
-      showAlert('info', 'Setting up Firebase admin account...');
-      const result = await createFirebaseAdmin();
-      
-      if (result.success) {
-        if (result.exists) {
-          showAlert('info', 'Firebase admin account already exists. You can now sign in.');
-        } else {
-          showAlert('success', 'Firebase admin account created successfully! You can now sign in with the default credentials.');
-        }
-      } else {
-        showAlert('danger', result.error || 'Failed to create admin account');
-      }
-    } catch (error) {
-      showAlert('danger', 'Error setting up admin account. Please try again.');
-    } finally {
-      setSetupLoading(false);
-    }
-  };
+
 
   const handleLogout = async () => {
     try {
@@ -123,34 +104,10 @@ export const AdminLogin: React.FC = () => {
               )}
 
               <div className="mb-4 text-center">
-                <h6 className="text-muted">Firebase Admin Setup</h6>
-                <div className="bg-light p-3 rounded mb-3">
+                <h6 className="text-muted">Default Admin Credentials</h6>
+                <div className="bg-light p-3 rounded">
                   <strong>Email:</strong> admin@system.local<br />
                   <strong>Password:</strong> AdminPass123!
-                </div>
-                <Button 
-                  variant="outline-primary" 
-                  size="sm" 
-                  onClick={handleSetupAdmin}
-                  disabled={setupLoading}
-                  className="mb-3"
-                >
-                  {setupLoading ? (
-                    <>
-                      <Spinner animation="border" size="sm" className="me-2" />
-                      Setting up...
-                    </>
-                  ) : (
-                    <>
-                      <FaCog className="me-2" />
-                      Setup Firebase Admin
-                    </>
-                  )}
-                </Button>
-                <div>
-                  <small className="text-muted">
-                    Click "Setup Firebase Admin" first, then sign in with the credentials above.
-                  </small>
                 </div>
               </div>
 
