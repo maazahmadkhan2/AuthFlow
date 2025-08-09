@@ -416,9 +416,6 @@ export const AuthPage: React.FC = () => {
                       <Form.Control.Feedback type="invalid">
                         {registerForm.formState.errors.role?.message}
                       </Form.Control.Feedback>
-                      <Form.Text className="text-muted small">
-                        Admin roles are assigned by existing administrators only.
-                      </Form.Text>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
