@@ -3,13 +3,13 @@
 This is a Firebase-only web application built with React and Node.js. The app uses Firebase Authentication for user management and Firestore database for data storage. It features a modern, mobile-first responsive UI built with React Bootstrap components. The authentication system includes login, registration, Google OAuth, and password reset functionality with a streamlined UI - password reset is handled via popup modal instead of a separate tab. The backend is minimal and only serves the React app, with all authentication and database operations handled client-side through Firebase.
 
 ## Recent Changes
-- **Successfully completed migration from Replit Agent to standard Replit environment (August 2025)**:
-  - Migrated hybrid Firebase auth + PostgreSQL database architecture to Replit
-  - Created PostgreSQL database and successfully migrated schema using Drizzle
+- **Successfully migrated to Firestore-only architecture (August 2025)**:
+  - Removed PostgreSQL and converted entirely to Firebase Firestore database
+  - All user data, roles, and permissions now stored in Firestore collections
   - Streamlined registration process with single "Create Account" form including role selection
-  - Limited role selection to student and instructor only (admin roles managed by administrators)
-  - Removed duplicate signup pages and consolidated authentication flow
-  - Fixed all TypeScript errors and configuration issues for Replit compatibility
+  - Limited role selection to student and instructor only (admin roles managed by administrators)  
+  - Admin user stored directly in Firestore with proper authentication flow
+  - Simplified backend to serve only static files, all database operations client-side
 - **Successfully implemented hybrid Firebase auth + PostgreSQL database architecture (August 2025)**:
   - Created comprehensive role-based signup system preventing admin role selection during registration  
   - Built database-driven user approval workflow where all new users default to pending status
@@ -69,10 +69,12 @@ Preferred communication style: Simple, everyday language.
 - **Database**: All data operations handled client-side via Firebase
 
 ## Database Architecture
-- **Database**: Firebase Firestore (NoSQL document database)
+- **Database**: Firebase Firestore (NoSQL document database) - ONLY DATABASE
 - **Collections**: 
   - Users collection for user profiles with role and permission data
   - Role_changes collection for audit trail of role modifications
+  - All data operations performed client-side with Firebase SDK
+  - No PostgreSQL or other databases used
   - Posts collection for user content (legacy, not currently used)
 - **Schema**: TypeScript interfaces for type safety with Zod validation
 - **Role System**: Each user document includes role, permissions array, and isActive status

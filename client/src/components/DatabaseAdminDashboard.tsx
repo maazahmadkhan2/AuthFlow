@@ -1,9 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, Table, Form, Modal, Alert, Spinner } from 'react-bootstrap';
 import { FaUsers, FaCog, FaShieldAlt, FaChartBar, FaUserEdit, FaToggleOn, FaToggleOff, FaHistory } from 'react-icons/fa';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '../lib/queryClient';
-import type { User, UserRole, UserStatus } from '../../../shared/schema';
+// All data operations now handled with Firestore directly
+import { getAllUsers, updateUserRole, toggleUserStatus, getPendingUsers, getUsersByRole, updateUserData } from '../lib/firebase';
+import { Timestamp } from 'firebase/firestore';
+// Types for Firestore user data
+type UserRole = 'admin' | 'manager' | 'coordinator' | 'instructor' | 'student';
+type UserStatus = 'pending' | 'approved' | 'rejected' | 'inactive';
+
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  role: UserRole;
+  status: UserStatus;
+  emailVerified: boolean;
+  isDefaultAdmin?: boolean;
+  permissions: string[];
+  isActive: boolean;
+  createdAt: any;
+  updatedAt: any;
+}
 
 export const DatabaseAdminDashboard: React.FC = () => {
   const [showRoleModal, setShowRoleModal] = useState(false);
@@ -12,68 +31,74 @@ export const DatabaseAdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('users');
   const [alert, setAlert] = useState<{ type: 'success' | 'danger'; message: string } | null>(null);
 
-  // Fetch all users
-  const { data: users = [], isLoading: usersLoading, refetch: refetchUsers } = useQuery({
-    queryKey: ['/api/users'],
-  });
+  const [users, setUsers] = useState<User[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<User[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
 
-  // Fetch pending users
-  const { data: pendingUsers = [], refetch: refetchPending } = useQuery({
-    queryKey: ['/api/users/pending'],
-  });
+  // Fetch users from Firestore
+  const fetchUsers = async () => {
+    try {
+      setUsersLoading(true);
+      const allUsers = await getAllUsers();
+      const pending = allUsers.filter(user => user.status === 'pending');
+      setUsers(allUsers);
+      setPendingUsers(pending);
+    } catch (error) {
+      showAlert('danger', 'Failed to fetch users');
+    } finally {
+      setUsersLoading(false);
+    }
+  };
 
-  // Approve user mutation
-  const approveMutation = useMutation({
-    mutationFn: async ({ userId, approvedBy }: { userId: string; approvedBy: string }) => {
-      return apiRequest(`/api/users/${userId}/approve`, {
-        method: 'POST',
-        body: JSON.stringify({ approvedBy }),
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // Approve user function
+  const approveUser = async (userId: string) => {
+    try {
+      // Update user status in Firestore
+      await updateUserData(userId, { 
+        status: 'approved',
+        approvedBy: 'system-admin-001',
+        approvedAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
       });
-    },
-    onSuccess: () => {
       showAlert('success', 'User approved successfully');
-      refetchUsers();
-      refetchPending();
-    },
-    onError: (error: any) => {
-      showAlert('danger', error.message || 'Failed to approve user');
-    },
-  });
+      fetchUsers();
+    } catch (error) {
+      showAlert('danger', 'Failed to approve user');
+    }
+  };
 
-  // Reject user mutation
-  const rejectMutation = useMutation({
-    mutationFn: async ({ userId, rejectedBy, reason }: { userId: string; rejectedBy: string; reason?: string }) => {
-      return apiRequest(`/api/users/${userId}/reject`, {
-        method: 'POST',
-        body: JSON.stringify({ rejectedBy, reason }),
+  // Reject user function
+  const rejectUser = async (userId: string, reason?: string) => {
+    try {
+      await updateUserData(userId, { 
+        status: 'rejected',
+        rejectedBy: 'system-admin-001',
+        rejectedAt: Timestamp.now(),
+        reason: reason || 'No reason provided',
+        updatedAt: Timestamp.now()
       });
-    },
-    onSuccess: () => {
       showAlert('success', 'User rejected');
-      refetchPending();
-    },
-    onError: (error: any) => {
-      showAlert('danger', error.message || 'Failed to reject user');
-    },
-  });
+      fetchUsers();
+    } catch (error) {
+      showAlert('danger', 'Failed to reject user');
+    }
+  };
 
-  // Update role mutation
-  const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role, changedBy, reason }: { userId: string; role: UserRole; changedBy: string; reason?: string }) => {
-      return apiRequest(`/api/users/${userId}/role`, {
-        method: 'POST',
-        body: JSON.stringify({ role, changedBy, reason }),
-      });
-    },
-    onSuccess: () => {
+  // Update role function
+  const updateRole = async (userId: string, role: UserRole) => {
+    try {
+      await updateUserRole(userId, role, 'system-admin-001');
       showAlert('success', 'User role updated successfully');
-      refetchUsers();
+      fetchUsers();
       setShowRoleModal(false);
-    },
-    onError: (error: any) => {
-      showAlert('danger', error.message || 'Failed to update user role');
-    },
-  });
+    } catch (error) {
+      showAlert('danger', 'Failed to update user role');
+    }
+  };
 
   const showAlert = (type: 'success' | 'danger', message: string) => {
     setAlert({ type, message });
@@ -81,18 +106,11 @@ export const DatabaseAdminDashboard: React.FC = () => {
   };
 
   const handleApproveUser = (user: User) => {
-    approveMutation.mutate({
-      userId: user.id,
-      approvedBy: 'default-admin', // Using default admin ID
-    });
+    approveUser(user.id);
   };
 
   const handleRejectUser = (user: User) => {
-    rejectMutation.mutate({
-      userId: user.id,
-      rejectedBy: 'default-admin',
-      reason: 'Account rejected by administrator',
-    });
+    rejectUser(user.id, 'Account rejected by administrator');
   };
 
   const openRoleModal = (user: User) => {
@@ -103,13 +121,7 @@ export const DatabaseAdminDashboard: React.FC = () => {
 
   const handleRoleUpdate = () => {
     if (!selectedUser) return;
-    
-    updateRoleMutation.mutate({
-      userId: selectedUser.id,
-      role: newRole,
-      changedBy: 'default-admin',
-      reason: 'Role updated by administrator',
-    });
+    updateRole(selectedUser.id, newRole);
   };
 
   const getRoleBadgeVariant = (role: UserRole) => {
@@ -323,19 +335,19 @@ export const DatabaseAdminDashboard: React.FC = () => {
                             size="sm"
                             className="me-2"
                             onClick={() => handleApproveUser(user)}
-                            disabled={approveMutation.isPending}
+                            disabled={false}
                             data-testid={`button-approve-${user.id}`}
                           >
-                            {approveMutation.isPending ? 'Approving...' : 'Approve'}
+                            Approve
                           </Button>
                           <Button
                             variant="danger"
                             size="sm"
                             onClick={() => handleRejectUser(user)}
-                            disabled={rejectMutation.isPending}
+                            disabled={false}
                             data-testid={`button-reject-${user.id}`}
                           >
-                            {rejectMutation.isPending ? 'Rejecting...' : 'Reject'}
+                            Reject
                           </Button>
                         </td>
                       </tr>

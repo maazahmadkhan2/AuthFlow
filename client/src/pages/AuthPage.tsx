@@ -3,8 +3,9 @@ import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Modal } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, registerSchema, forgotPasswordSchema } from '../../../shared/firebase-schema';
-import { signInWithEmail, signUpWithEmail, signInWithGoogle, resetPassword, resendEmailVerification, auth, checkEmailExists } from '../lib/firebase';
+import { signInWithEmail, signUpWithEmail, signInWithGoogle, resetPassword, resendEmailVerification, auth, checkEmailExists, db, getUserData } from '../lib/firebase';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { useLocation, Link } from 'wouter';
 import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
 import { PendingApprovalMessage } from '../components/PendingApprovalMessage';
@@ -81,18 +82,12 @@ export const AuthPage: React.FC = () => {
     try {
       const result = await signInWithEmailAndPassword(auth, data.email, data.password);
       
-      // Check if user exists in database
-      const response = await fetch(`/api/users/${result.user.uid}`);
-      if (response.status === 404) {
+      // Check if user exists in Firestore
+      const userData = await getUserData(result.user.uid);
+      if (!userData) {
         showAlert('danger', 'Account not found. Please contact support.');
         return;
       }
-      
-      if (!response.ok) {
-        throw new Error('Failed to verify account status');
-      }
-      
-      const userData = await response.json();
       
       if (userData.status === 'pending') {
         showAlert('warning', 'Your account is pending approval. Please wait for an administrator to approve your access.');
@@ -162,26 +157,23 @@ export const AuthPage: React.FC = () => {
       // Send email verification
       await sendEmailVerification(result.user);
 
-      // Create user record in database with selected role
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: result.user.uid,
-          email: data.email,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          displayName: `${data.firstName} ${data.lastName}`,
-          role: data.role,
-          emailVerified: false,
-        }),
+      // Create user record in Firestore with selected role
+      await setDoc(doc(db, 'users', result.user.uid), {
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        displayName: `${data.firstName} ${data.lastName}`,
+        role: data.role,
+        status: 'pending', // All new users are pending approval
+        emailVerified: false,
+        isDefaultAdmin: false,
+        permissions: data.role === 'instructor' 
+          ? ['manage_students', 'manage_assignments', 'view_class_data']
+          : ['view_courses', 'submit_assignments', 'view_grades'],
+        isActive: true,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to create user record');
-      }
 
       showAlert('success', 'Account created successfully! Check your email to verify your account. Your account will be activated after admin approval.');
       setActiveTab('login');

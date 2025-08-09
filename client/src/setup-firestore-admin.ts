@@ -18,11 +18,14 @@ export const setupFirestoreAdmin = async () => {
     }
   } catch (error) {
     console.error('❌ Error setting up Firestore admin:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 };
 
-// Auto-run if in browser
+// Auto-run if in browser and Firebase is available
 if (typeof window !== 'undefined') {
-  setupFirestoreAdmin();
+  // Run after a small delay to ensure Firebase is initialized
+  setTimeout(() => {
+    setupFirestoreAdmin();
+  }, 1000);
 }

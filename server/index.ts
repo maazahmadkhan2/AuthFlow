@@ -37,7 +37,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Note: Firestore admin will be initialized via client-side (browser)
+  // All database operations now handled client-side with Firestore
 
   const server = await registerRoutes(app);
 
