@@ -4,7 +4,6 @@ import { Layout } from "./components/Layout";
 import { AuthPage } from "./pages/AuthPage";
 import { Dashboard } from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
-import { SignupWithRoles } from "./pages/signup-with-roles";
 import { AdminLogin } from "./pages/admin-login";
 import NotFound from "./pages/not-found";
 import { queryClient } from "./lib/queryClient";
@@ -18,7 +17,6 @@ function App() {
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/profile" component={Profile} />
           <Route path="/auth" component={AuthPage} />
-          <Route path="/signup" component={SignupWithRoles} />
           <Route path="/admin" component={AdminLogin} />
           <Route component={NotFound} />
         </Switch>

@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, registerSchema, forgotPasswordSchema } from '../../../shared/firebase-schema';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, resetPassword, resendEmailVerification, auth, checkEmailExists } from '../lib/firebase';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { useLocation, Link } from 'wouter';
 import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
 import { PendingApprovalMessage } from '../components/PendingApprovalMessage';
@@ -38,6 +38,7 @@ export const AuthPage: React.FC = () => {
       email: '',
       password: '',
       confirmPassword: '',
+      role: 'student',
       acceptTerms: false,
     },
   });
@@ -108,8 +109,39 @@ export const AuthPage: React.FC = () => {
         }
       }
 
-      await signUpWithEmail(data.email, data.password, data.firstName, data.lastName);
-      showAlert('success', 'Account created! Please check your email for verification.');
+      // Create Firebase user first
+      const result = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      
+      // Update Firebase profile
+      await updateProfile(result.user, {
+        displayName: `${data.firstName} ${data.lastName}`,
+      });
+
+      // Send email verification
+      await sendEmailVerification(result.user);
+
+      // Create user record in database with selected role
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: result.user.uid,
+          email: data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          displayName: `${data.firstName} ${data.lastName}`,
+          role: data.role,
+          emailVerified: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create user record');
+      }
+
+      showAlert('success', 'Account created! Please check your email for verification and wait for admin approval.');
       setActiveTab('login');
       // Pre-fill login form
       loginForm.setValue('email', data.email);
@@ -169,7 +201,6 @@ export const AuthPage: React.FC = () => {
       // For simplicity, we'll show a generic message since we can't verify email exists
       // In a real app, you might have a backend endpoint to handle this
       showAlert('success', 'If this email exists in our system and is unverified, a verification email will be sent.');
-      setShowResendVerification(false);
     } catch (error: any) {
       console.error('Error sending verification email:', error);
       showAlert('danger', error.message || 'Failed to send verification email');
@@ -301,11 +332,6 @@ export const AuthPage: React.FC = () => {
                       >
                         Create an account
                       </Button>
-                      <br />
-                      <small className="text-muted">or </small>
-                      <Link href="/signup" className="text-primary small">
-                        <strong>Register with Role Selection</strong>
-                      </Link>
                     </div>
                     <hr />
                     <div className="text-center">
@@ -372,6 +398,27 @@ export const AuthPage: React.FC = () => {
                       <Form.Control.Feedback type="invalid">
                         {registerForm.formState.errors.email?.message}
                       </Form.Control.Feedback>
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                      <Form.Label className="small">
+                        <FaUser className="me-2" />
+                        Select Your Role
+                      </Form.Label>
+                      <Form.Select
+                        {...registerForm.register('role')}
+                        isInvalid={!!registerForm.formState.errors.role}
+                        style={{ height: '38px', fontSize: '14px' }}
+                      >
+                        <option value="student">Student - Access courses and submit assignments</option>
+                        <option value="instructor">Instructor - Manage classes and students</option>
+                      </Form.Select>
+                      <Form.Control.Feedback type="invalid">
+                        {registerForm.formState.errors.role?.message}
+                      </Form.Control.Feedback>
+                      <Form.Text className="text-muted small">
+                        Admin roles are assigned by existing administrators only.
+                      </Form.Text>
                     </Form.Group>
 
                     <Form.Group className="mb-3">

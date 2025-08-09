@@ -59,7 +59,7 @@ export const registerSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
-  role: roleSchema.optional().default('student'),
+  role: z.enum(['student', 'instructor']).default('student'), // Only student and instructor allowed
   acceptTerms: z.boolean().refine(val => val === true, "You must accept the terms"),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
