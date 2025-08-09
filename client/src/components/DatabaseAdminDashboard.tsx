@@ -269,7 +269,7 @@ export const DatabaseAdminDashboard: React.FC = () => {
   const approvedUsers = realUsers.filter((u: User) => u.status === 'approved');
   const totalUsers = realUsers.length;
   const activeUsers = realUsers.filter((u: User) => u.status === 'approved' && u.isActive).length;
-  const admins = realUsers.filter((u: User) => u.role === 'admin').length;
+
 
   return (
     <Container fluid className="py-4">
@@ -287,7 +287,7 @@ export const DatabaseAdminDashboard: React.FC = () => {
       )}
 
       <Row className="mb-4">
-        <Col md={3}>
+        <Col md={4}>
           <Card className="text-center">
             <Card.Body>
               <FaUsers className="mb-2" size={40} color="#007bff" />
@@ -296,7 +296,7 @@ export const DatabaseAdminDashboard: React.FC = () => {
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
+        <Col md={4}>
           <Card className="text-center">
             <Card.Body>
               <FaShieldAlt className="mb-2" size={40} color="#28a745" />
@@ -305,16 +305,7 @@ export const DatabaseAdminDashboard: React.FC = () => {
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
-          <Card className="text-center">
-            <Card.Body>
-              <FaChartBar className="mb-2" size={40} color="#ffc107" />
-              <Card.Title data-testid="text-admin-count">{admins}</Card.Title>
-              <Card.Text>Administrators</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={3}>
+        <Col md={4}>
           <Card className="text-center">
             <Card.Body>
               <FaCog className="mb-2" size={40} color={pendingUsers.length > 0 ? '#dc3545' : '#6c757d'} />
