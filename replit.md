@@ -3,6 +3,13 @@
 This is a Firebase-only web application built with React and Node.js. The app uses Firebase Authentication for user management and Firestore database for data storage. It features a modern, mobile-first responsive UI built with React Bootstrap components. The authentication system includes login, registration, Google OAuth, and password reset functionality with a streamlined UI - password reset is handled via popup modal instead of a separate tab. The backend is minimal and only serves the React app, with all authentication and database operations handled client-side through Firebase.
 
 ## Recent Changes
+- **Successfully set up Android APK generation capabilities (August 2025)**:
+  - Configured Capacitor for mobile app development with proper Android platform setup
+  - Created comprehensive build guide (BUILD-APK-GUIDE.md) with step-by-step instructions
+  - Set up automated build script (scripts/build-apk.sh) for streamlined APK preparation
+  - Configured app with ID com.authflow.app and name AuthFlow for Play Store publishing
+  - Ensured Firebase authentication works seamlessly in mobile environment
+  - Web assets properly sync to Android project for native app compilation
 - **Added full CRUD functionality to admin dashboard (August 2025)**:
   - Implemented Create User functionality with automatic approval and email verification bypass
   - Added Edit User capability to modify user details and roles
