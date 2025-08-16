@@ -5,6 +5,7 @@ import { AuthPage } from "./pages/AuthPage";
 import { Dashboard } from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
 import { AdminLogin } from "./pages/admin-login";
+import EmailVerification from "./pages/EmailVerification";
 import NotFound from "./pages/not-found";
 import { queryClient } from "./lib/queryClient";
 
@@ -18,6 +19,8 @@ function App() {
           <Route path="/profile" component={Profile} />
           <Route path="/auth" component={AuthPage} />
           <Route path="/admin" component={AdminLogin} />
+          <Route path="/verify-email" component={() => <EmailVerification />} />
+          <Route path="/email-verification" component={() => <EmailVerification />} />
           <Route component={NotFound} />
         </Switch>
       </Layout>

@@ -3,6 +3,15 @@
 This is a Firebase-only web application built with React and Node.js. The app uses Firebase Authentication for user management and Firestore database for data storage. It features a modern, mobile-first responsive UI built with React Bootstrap components. The authentication system includes login, registration, Google OAuth, and password reset functionality with a streamlined UI - password reset is handled via popup modal instead of a separate tab. The backend is minimal and only serves the React app, with all authentication and database operations handled client-side through Firebase.
 
 ## Recent Changes
+- **Added comprehensive email verification system (August 2025)**:
+  - Created dedicated email verification page at /verify-email and /email-verification routes
+  - Implemented full Firebase action code handling for email verification
+  - Added SendGrid integration for professional verification email sending
+  - Created custom HTML email templates with responsive design
+  - Built server-side API endpoints for email sending and status checking
+  - Added automatic Firestore user document updates on successful verification
+  - Included comprehensive error handling for expired and invalid links
+  - Added mobile-responsive verification UI with Bootstrap styling
 - **Successfully set up Android APK generation capabilities (August 2025)**:
   - Configured Capacitor for mobile app development with proper Android platform setup
   - Created comprehensive build guide (BUILD-APK-GUIDE.md) with step-by-step instructions
