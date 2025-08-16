@@ -4,7 +4,6 @@ import { FaExclamationTriangle, FaEnvelope, FaClock, FaInfoCircle } from 'react-
 import { sendEmailVerification } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '../lib/queryClient';
 
 interface PendingApprovalMessageProps {
   user: any;
@@ -27,9 +26,39 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
     
     setResendingVerification(true);
     try {
-      await sendEmailVerification(user);
-      setVerificationSent(true);
-      setTimeout(() => setVerificationSent(false), 10000);
+      // Try SendGrid first, fallback to Firebase
+      try {
+        const sendGridResponse = await fetch('/api/send-verification-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userEmail: user.email,
+            userName: user.displayName || 'User',
+            actionCode: btoa(`${user.uid}_${Date.now()}_verify`),
+            baseUrl: window.location.origin
+          })
+        });
+
+        if (sendGridResponse.ok) {
+          setVerificationSent(true);
+          setTimeout(() => setVerificationSent(false), 10000);
+          console.log('Professional verification email sent via SendGrid');
+        } else {
+          // Fallback to Firebase
+          await sendEmailVerification(user);
+          setVerificationSent(true);
+          setTimeout(() => setVerificationSent(false), 10000);
+          console.log('Verification email sent via Firebase fallback');
+        }
+      } catch (error) {
+        // Fallback to Firebase
+        await sendEmailVerification(user);
+        setVerificationSent(true);
+        setTimeout(() => setVerificationSent(false), 10000);
+        console.log('Verification email sent via Firebase fallback');
+      }
     } catch (error: any) {
       console.error('Error sending verification email:', error);
     } finally {
@@ -58,9 +87,9 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
               Please verify your email address to continue. Check your inbox for a verification link.
             </p>
             {verificationSent ? (
-              <div className="text-success">
+              <div className="text-success mb-2">
                 <FaInfoCircle className="me-1" />
-                Verification email sent! Check your inbox.
+                Professional verification email sent! Check your inbox for a beautifully designed email.
               </div>
             ) : (
               <Button
@@ -110,8 +139,45 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
             <Alert.Heading className="h6 mb-2">Account Pending Approval</Alert.Heading>
             <p className="mb-2">
               Your account has been created and is awaiting administrator approval.
-              You'll receive an email notification once your account is approved.
+              Please also verify your email address if you haven't already.
             </p>
+            
+            {!emailVerified && (
+              <div className="bg-light p-3 rounded mb-3">
+                <div className="d-flex align-items-center mb-2">
+                  <FaEnvelope className="text-warning me-2" />
+                  <small className="fw-bold text-warning">Email Verification Required</small>
+                </div>
+                <small className="text-muted d-block mb-2">
+                  Please verify your email address to complete your registration process.
+                </small>
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={handleResendVerification}
+                  disabled={resendingVerification}
+                  className="d-flex align-items-center gap-1"
+                >
+                  {resendingVerification ? (
+                    <>
+                      <Spinner animation="border" size="sm" />
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaEnvelope />
+                      <span>Resend Verification Email</span>
+                    </>
+                  )}
+                </Button>
+                {verificationSent && (
+                  <div className="text-success mt-2 small">
+                    <FaInfoCircle className="me-1" />
+                    Professional verification email sent! Check your inbox.
+                  </div>
+                )}
+              </div>
+            )}
             <div className="bg-light p-2 rounded">
               <small>
                 <strong>Account Details:</strong><br />
