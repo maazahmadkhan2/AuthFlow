@@ -39,7 +39,7 @@ export const sendVerificationEmail = async (params: SendVerificationEmailParams)
     userName,
     actionCode,
     baseUrl = process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000',
-    fromEmail = 'noreply@yourdomain.com' // TODO: Replace with your verified SendGrid sender
+    fromEmail = 'khanmaaz22@gmail.com' // Verified SendGrid sender
   } = params;
 
   try {

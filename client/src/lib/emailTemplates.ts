@@ -205,7 +205,7 @@ export interface SendGridEmailData {
 
 export const createVerificationEmailData = (
   data: EmailVerificationData,
-  fromEmail: string
+  fromEmail: string = 'khanmaaz22@gmail.com'
 ): SendGridEmailData => {
   const template = generateVerificationEmailTemplate(data);
   
