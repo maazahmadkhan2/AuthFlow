@@ -154,8 +154,33 @@ export const AuthPage: React.FC = () => {
         displayName: `${data.firstName} ${data.lastName}`,
       });
 
-      // Send email verification
-      await sendEmailVerification(result.user);
+      // Send email verification via SendGrid (with Firebase fallback)
+      try {
+        const sendGridResponse = await fetch('/api/send-verification-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userEmail: result.user.email,
+            userName: `${data.firstName} ${data.lastName}`,
+            actionCode: btoa(`${result.user.uid}_${Date.now()}_verify`),
+            baseUrl: window.location.origin
+          })
+        });
+
+        if (sendGridResponse.ok) {
+          console.log('Verification email sent via SendGrid');
+        } else {
+          // Fallback to Firebase if SendGrid fails
+          await sendEmailVerification(result.user);
+          console.log('Verification email sent via Firebase (SendGrid unavailable)');
+        }
+      } catch (error) {
+        // Fallback to Firebase email verification
+        await sendEmailVerification(result.user);
+        console.log('Verification email sent via Firebase (fallback)');
+      }
 
       // Create user record in Firestore with selected role
       await setDoc(doc(db, 'users', result.user.uid), {
@@ -233,8 +258,33 @@ export const AuthPage: React.FC = () => {
     setLoading(true);
     try {
       if (user) {
-        await sendEmailVerification(user);
-        showAlert('success', 'Verification email sent! Check your inbox.');
+        // Try SendGrid first, fallback to Firebase
+        try {
+          const sendGridResponse = await fetch('/api/send-verification-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userEmail: user.email,
+              userName: user.displayName || 'User',
+              actionCode: btoa(`${user.uid}_${Date.now()}_verify`),
+              baseUrl: window.location.origin
+            })
+          });
+
+          if (sendGridResponse.ok) {
+            showAlert('success', 'Verification email sent via professional email service! Check your inbox.');
+          } else {
+            // Fallback to Firebase
+            await sendEmailVerification(user);
+            showAlert('success', 'Verification email sent! Check your inbox.');
+          }
+        } catch (error) {
+          // Fallback to Firebase
+          await sendEmailVerification(user);
+          showAlert('success', 'Verification email sent! Check your inbox.');
+        }
       } else {
         showAlert('success', 'If this email exists in our system and is unverified, a verification email will be sent.');
       }

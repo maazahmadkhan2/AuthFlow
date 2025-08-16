@@ -113,8 +113,34 @@ export const signUpWithEmail = async (email: string, password: string, firstName
       updatedAt: Timestamp.now(),
     });
     
-    // Send email verification
-    await sendEmailVerification(result.user);
+    // Send email verification via SendGrid (if available) or Firebase
+    try {
+      // Try SendGrid first
+      const sendGridResponse = await fetch('/api/send-verification-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userEmail: result.user.email,
+          userName: `${firstName} ${lastName}`,
+          actionCode: btoa(`${result.user.uid}_${Date.now()}_verify`),
+          baseUrl: window.location.origin
+        })
+      });
+
+      if (sendGridResponse.ok) {
+        console.log('Verification email sent via SendGrid');
+      } else {
+        // Fallback to Firebase if SendGrid fails
+        await sendEmailVerification(result.user);
+        console.log('Verification email sent via Firebase (SendGrid unavailable)');
+      }
+    } catch (error) {
+      // Fallback to Firebase email verification
+      await sendEmailVerification(result.user);
+      console.log('Verification email sent via Firebase (fallback)');
+    }
     
     return result.user;
   } catch (error) {
