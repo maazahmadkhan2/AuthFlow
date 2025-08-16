@@ -115,11 +115,8 @@ export const signUpWithEmail = async (email: string, password: string, firstName
     
     // Generate Firebase verification code and send via SendGrid
     try {
-      // First send Firebase verification to generate action code
-      await sendEmailVerification(result.user, {
-        url: window.location.origin,
-        handleCodeInApp: true
-      });
+      // Send Firebase verification (will automatically use SendGrid)
+      await sendEmailVerification(result.user);
       
       console.log('Firebase verification code generated and sent via SendGrid');
     } catch (error) {
@@ -236,10 +233,7 @@ export const resetPassword = async (email: string) => {
 export const resendEmailVerification = async (user: User) => {
   try {
     // Generate Firebase verification code and send via SendGrid
-    await sendEmailVerification(user, {
-      url: window.location.origin,
-      handleCodeInApp: true
-    });
+    await sendEmailVerification(user);
     
     console.log('Firebase verification code generated and sent via SendGrid');
   } catch (error) {

@@ -115,26 +115,10 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ mode = 'standalon
   const handleRequestNewVerification = async () => {
     try {
       if (auth.currentUser) {
-        // Send verification email via SendGrid
-        const sendGridResponse = await fetch('/api/send-verification-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userEmail: auth.currentUser.email,
-            userName: auth.currentUser.displayName || 'User',
-            actionCode: btoa(`${auth.currentUser.uid}_${Date.now()}_verify`),
-            baseUrl: window.location.origin
-          })
-        });
-
-        if (sendGridResponse.ok) {
-          setErrorMessage('A new verification email has been sent to your email address.');
-        } else {
-          const errorText = await sendGridResponse.text();
-          setErrorMessage(`Failed to send verification email: ${errorText}`);
-        }
+        // Generate Firebase verification code and send via SendGrid
+        await sendEmailVerification(auth.currentUser);
+        
+        setErrorMessage('A new verification email has been sent to your email address.');
       } else {
         setErrorMessage('Please log in first to request a new verification email.');
       }

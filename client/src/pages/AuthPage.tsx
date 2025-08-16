@@ -157,10 +157,7 @@ export const AuthPage: React.FC = () => {
 
       // Generate Firebase verification code and send via SendGrid
       try {
-        await sendEmailVerification(result.user, {
-          url: window.location.origin,
-          handleCodeInApp: true
-        });
+        await sendEmailVerification(result.user);
         
         console.log('Firebase verification code generated and sent via SendGrid');
       } catch (error) {
@@ -245,10 +242,7 @@ export const AuthPage: React.FC = () => {
     try {
       if (user) {
         // Generate Firebase verification code and send via SendGrid
-        await sendEmailVerification(user, {
-          url: window.location.origin,
-          handleCodeInApp: true
-        });
+        await sendEmailVerification(user);
         
         showAlert('success', 'Verification email sent! Check your inbox and click the verification link.');
       } else {

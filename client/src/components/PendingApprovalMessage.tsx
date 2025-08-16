@@ -27,10 +27,7 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
     setResendingVerification(true);
     try {
       // Generate Firebase verification code and send via SendGrid
-      await sendEmailVerification(user, {
-        url: window.location.origin,
-        handleCodeInApp: true
-      });
+      await sendEmailVerification(user);
       
       setVerificationSent(true);
       setTimeout(() => setVerificationSent(false), 10000);
