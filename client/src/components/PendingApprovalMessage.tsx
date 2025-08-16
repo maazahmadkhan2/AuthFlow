@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Button, Spinner } from 'react-bootstrap';
 import { FaExclamationTriangle, FaEnvelope, FaClock, FaInfoCircle } from 'react-icons/fa';
-import { sendEmailVerification } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useQuery } from '@tanstack/react-query';
 
@@ -26,14 +25,30 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
     
     setResendingVerification(true);
     try {
-      // Generate Firebase verification code and send via SendGrid
-      await sendEmailVerification(user);
-      
-      setVerificationSent(true);
-      setTimeout(() => setVerificationSent(false), 10000);
-      console.log('Firebase verification code generated and sent via SendGrid');
+      // Send verification email via SendGrid exclusively
+      const sendGridResponse = await fetch('/api/send-verification-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userEmail: user.email,
+          userName: user.displayName || 'User',
+          actionCode: btoa(`${user.uid}_${Date.now()}_verify`),
+          baseUrl: window.location.origin
+        })
+      });
+
+      if (sendGridResponse.ok) {
+        setVerificationSent(true);
+        setTimeout(() => setVerificationSent(false), 10000);
+        console.log('Verification email sent via SendGrid');
+      } else {
+        const errorText = await sendGridResponse.text();
+        throw new Error(`SendGrid email failed: ${errorText}`);
+      }
     } catch (error: any) {
-      console.error('Error sending verification email:', error);
+      console.error('Error sending verification email via SendGrid:', error);
       alert('Failed to send verification email. Please try again.');
     } finally {
       setResendingVerification(false);

@@ -113,14 +113,29 @@ export const signUpWithEmail = async (email: string, password: string, firstName
       updatedAt: Timestamp.now(),
     });
     
-    // Generate Firebase verification code and send via SendGrid
+    // Send email verification via SendGrid exclusively
     try {
-      // Send Firebase verification (will automatically use SendGrid)
-      await sendEmailVerification(result.user);
-      
-      console.log('Firebase verification code generated and sent via SendGrid');
+      const sendGridResponse = await fetch('/api/send-verification-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userEmail: result.user.email,
+          userName: `${firstName} ${lastName}`,
+          actionCode: btoa(`${result.user.uid}_${Date.now()}_verify`),
+          baseUrl: window.location.origin
+        })
+      });
+
+      if (sendGridResponse.ok) {
+        console.log('Verification email sent via SendGrid');
+      } else {
+        const errorText = await sendGridResponse.text();
+        throw new Error(`SendGrid email failed: ${errorText}`);
+      }
     } catch (error) {
-      console.error('Failed to send verification email:', error);
+      console.error('Failed to send verification email via SendGrid:', error);
       throw new Error('Failed to send verification email. Please try again.');
     }
     
@@ -232,12 +247,28 @@ export const resetPassword = async (email: string) => {
 // Email Verification
 export const resendEmailVerification = async (user: User) => {
   try {
-    // Generate Firebase verification code and send via SendGrid
-    await sendEmailVerification(user);
+    // Send verification email via SendGrid exclusively
+    const sendGridResponse = await fetch('/api/send-verification-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userEmail: user.email,
+        userName: user.displayName || 'User',
+        actionCode: btoa(`${user.uid}_${Date.now()}_verify`),
+        baseUrl: window.location.origin
+      })
+    });
+
+    if (!sendGridResponse.ok) {
+      const errorText = await sendGridResponse.text();
+      throw new Error(`SendGrid email failed: ${errorText}`);
+    }
     
-    console.log('Firebase verification code generated and sent via SendGrid');
+    console.log('Verification email sent via SendGrid');
   } catch (error) {
-    console.error("Error sending email verification:", error);
+    console.error("Error sending email verification via SendGrid:", error);
     throw error;
   }
 };

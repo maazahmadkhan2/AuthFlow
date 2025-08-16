@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, registerSchema, forgotPasswordSchema } from '../../../shared/firebase-schema';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, resetPassword, resendEmailVerification, auth, checkEmailExists, db, getUserData } from '../lib/firebase';
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from 'firebase/auth';
 import { sendCustomFirebaseVerification } from '../lib/firebaseEmailInterceptor';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { useLocation, Link } from 'wouter';
@@ -155,13 +155,29 @@ export const AuthPage: React.FC = () => {
         displayName: `${data.firstName} ${data.lastName}`,
       });
 
-      // Generate Firebase verification code and send via SendGrid
+      // Send email verification via SendGrid exclusively
       try {
-        await sendEmailVerification(result.user);
-        
-        console.log('Firebase verification code generated and sent via SendGrid');
+        const sendGridResponse = await fetch('/api/send-verification-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userEmail: result.user.email,
+            userName: `${data.firstName} ${data.lastName}`,
+            actionCode: btoa(`${result.user.uid}_${Date.now()}_verify`),
+            baseUrl: window.location.origin
+          })
+        });
+
+        if (sendGridResponse.ok) {
+          console.log('Verification email sent via SendGrid');
+        } else {
+          const errorText = await sendGridResponse.text();
+          throw new Error(`SendGrid email failed: ${errorText}`);
+        }
       } catch (error) {
-        console.error('Failed to send verification email:', error);
+        console.error('Failed to send verification email via SendGrid:', error);
         throw new Error('Failed to send verification email. Please try again.');
       }
 
@@ -241,10 +257,26 @@ export const AuthPage: React.FC = () => {
     setLoading(true);
     try {
       if (user) {
-        // Generate Firebase verification code and send via SendGrid
-        await sendEmailVerification(user);
-        
-        showAlert('success', 'Verification email sent! Check your inbox and click the verification link.');
+        // Send verification email via SendGrid exclusively
+        const sendGridResponse = await fetch('/api/send-verification-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userEmail: user.email,
+            userName: user.displayName || 'User',
+            actionCode: btoa(`${user.uid}_${Date.now()}_verify`),
+            baseUrl: window.location.origin
+          })
+        });
+
+        if (sendGridResponse.ok) {
+          showAlert('success', 'Verification email sent! Check your inbox and click the verification link.');
+        } else {
+          const errorText = await sendGridResponse.text();
+          throw new Error(`SendGrid email failed: ${errorText}`);
+        }
       } else {
         showAlert('success', 'If this email exists in our system and is unverified, a verification email will be sent.');
       }
