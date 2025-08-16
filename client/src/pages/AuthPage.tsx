@@ -90,7 +90,7 @@ export const AuthPage: React.FC = () => {
       }
       
       if (userData.status === 'pending') {
-        showAlert('warning', 'Your account is pending approval. Please wait for an administrator to approve your access.');
+        // Don't show basic alert, let the PendingApprovalMessage component handle this
         return;
       }
       
@@ -328,27 +328,12 @@ export const AuthPage: React.FC = () => {
                 </Alert>
               )}
               
-              {/* Show email verification alert at top when needed */}
-              {user && showResendVerification && !emailVerified && (
-                <Alert variant="warning" className="mb-4">
-                  <div className="d-flex align-items-start">
-                    <FaEnvelope className="me-2 mt-1" />
-                    <div className="flex-grow-1">
-                      <Alert.Heading className="h6 mb-2">Email Verification Required</Alert.Heading>
-                      <p className="mb-2">
-                        Please verify your email address to continue. Check your inbox for a verification link.
-                      </p>
-                      <Button 
-                        variant="warning" 
-                        size="sm" 
-                        onClick={handleResendVerification}
-                        disabled={loading}
-                      >
-                        {loading ? <Spinner size="sm" /> : 'Resend Verification Email'}
-                      </Button>
-                    </div>
-                  </div>
-                </Alert>
+              {/* Show comprehensive pending approval message with resend verification */}
+              {user && (
+                <PendingApprovalMessage 
+                  user={user} 
+                  emailVerified={emailVerified}
+                />
               )}
 
               {activeTab === 'login' ? (
