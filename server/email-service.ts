@@ -39,7 +39,7 @@ export const sendVerificationEmail = async (params: SendVerificationEmailParams)
     userName,
     actionCode,
     baseUrl = process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000',
-    fromEmail = 'noreply@authflow.app' // Update with your verified sender - must be verified in SendGrid
+    fromEmail = 'noreply@yourdomain.com' // TODO: Replace with your verified SendGrid sender
   } = params;
 
   try {
