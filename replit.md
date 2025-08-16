@@ -3,14 +3,12 @@
 This is a Firebase-only web application built with React and Node.js. The app uses Firebase Authentication for user management and Firestore database for data storage. It features a modern, mobile-first responsive UI built with React Bootstrap components. The authentication system includes login, registration, Google OAuth, and password reset functionality with a streamlined UI - password reset is handled via popup modal instead of a separate tab. The backend is minimal and only serves the React app, with all authentication and database operations handled client-side through Firebase.
 
 ## Recent Changes
-- **Successfully integrated SendGrid for professional email verification (August 2025)**:
-  - Added SendGrid API key configuration and verified service connectivity
-  - Integrated SendGrid service into user registration and resend verification flows
-  - Implemented intelligent fallback system: SendGrid primary, Firebase fallback (fully operational)
-  - Built comprehensive email service hooks and components for easy integration
-  - Added professional HTML email templates with AuthFlow branding and responsive design
-  - Successfully configured verified SendGrid sender (khanmaaz22@gmail.com) - SendGrid emails now active
-  - All verification emails now sent via SendGrid with professional branding and custom verification page URLs
+- **Successfully configured email verification system with Firebase (August 2025)**:
+  - Fixed email verification to use Firebase's built-in system for proper verification link handling
+  - Enhanced pending approval interface with prominent resend verification functionality
+  - Users in pending approval state now see clear email verification section with resend button
+  - Verification emails use Firebase's native system which works seamlessly with email verification page
+  - SendGrid infrastructure remains available for future custom email notifications
 - **Added comprehensive email verification system (August 2025)**:
   - Created dedicated email verification page at /verify-email and /email-verification routes
   - Implemented full Firebase action code handling for email verification

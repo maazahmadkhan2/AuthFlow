@@ -26,39 +26,11 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
     
     setResendingVerification(true);
     try {
-      // Try SendGrid first, fallback to Firebase
-      try {
-        const sendGridResponse = await fetch('/api/send-verification-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userEmail: user.email,
-            userName: user.displayName || 'User',
-            actionCode: btoa(`${user.uid}_${Date.now()}_verify`),
-            baseUrl: window.location.origin
-          })
-        });
-
-        if (sendGridResponse.ok) {
-          setVerificationSent(true);
-          setTimeout(() => setVerificationSent(false), 10000);
-          console.log('Professional verification email sent via SendGrid');
-        } else {
-          // Fallback to Firebase
-          await sendEmailVerification(user);
-          setVerificationSent(true);
-          setTimeout(() => setVerificationSent(false), 10000);
-          console.log('Verification email sent via Firebase fallback');
-        }
-      } catch (error) {
-        // Fallback to Firebase
-        await sendEmailVerification(user);
-        setVerificationSent(true);
-        setTimeout(() => setVerificationSent(false), 10000);
-        console.log('Verification email sent via Firebase fallback');
-      }
+      // Use Firebase's built-in email verification system
+      await sendEmailVerification(user);
+      setVerificationSent(true);
+      setTimeout(() => setVerificationSent(false), 10000);
+      console.log('Firebase verification email sent with proper verification link');
     } catch (error: any) {
       console.error('Error sending verification email:', error);
     } finally {
@@ -89,7 +61,7 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
             {verificationSent ? (
               <div className="text-success mb-2">
                 <FaInfoCircle className="me-1" />
-                Professional verification email sent! Check your inbox for a beautifully designed email.
+                Verification email sent! Check your inbox and click the verification link.
               </div>
             ) : (
               <Button
@@ -173,7 +145,7 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
                 {verificationSent && (
                   <div className="text-success mt-2 small">
                     <FaInfoCircle className="me-1" />
-                    Professional verification email sent! Check your inbox.
+                    Verification email sent! Check your inbox and click the verification link.
                   </div>
                 )}
               </div>

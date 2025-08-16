@@ -258,33 +258,9 @@ export const AuthPage: React.FC = () => {
     setLoading(true);
     try {
       if (user) {
-        // Try SendGrid first, fallback to Firebase
-        try {
-          const sendGridResponse = await fetch('/api/send-verification-email', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              userEmail: user.email,
-              userName: user.displayName || 'User',
-              actionCode: btoa(`${user.uid}_${Date.now()}_verify`),
-              baseUrl: window.location.origin
-            })
-          });
-
-          if (sendGridResponse.ok) {
-            showAlert('success', 'Verification email sent via professional email service! Check your inbox.');
-          } else {
-            // Fallback to Firebase
-            await sendEmailVerification(user);
-            showAlert('success', 'Verification email sent! Check your inbox.');
-          }
-        } catch (error) {
-          // Fallback to Firebase
-          await sendEmailVerification(user);
-          showAlert('success', 'Verification email sent! Check your inbox.');
-        }
+        // Use Firebase's built-in email verification system (works with verification page)
+        await sendEmailVerification(user);
+        showAlert('success', 'Verification email sent! Please check your inbox and click the verification link.');
       } else {
         showAlert('success', 'If this email exists in our system and is unverified, a verification email will be sent.');
       }
