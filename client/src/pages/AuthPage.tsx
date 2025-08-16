@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, registerSchema, forgotPasswordSchema } from '../../../shared/firebase-schema';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, resetPassword, resendEmailVerification, auth, checkEmailExists, db, getUserData } from '../lib/firebase';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, signInWithEmailAndPassword } from 'firebase/auth';
+import { sendCustomFirebaseVerification } from '../lib/firebaseEmailInterceptor';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { useLocation, Link } from 'wouter';
 import { FaGoogle, FaEye, FaEyeSlash, FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
@@ -258,9 +259,10 @@ export const AuthPage: React.FC = () => {
     setLoading(true);
     try {
       if (user) {
-        // Use Firebase's built-in email verification system (works with verification page)
+        // Send Firebase verification email - will work with your verification page
         await sendEmailVerification(user);
-        showAlert('success', 'Verification email sent! Please check your inbox and click the verification link.');
+        
+        showAlert('success', 'Verification email sent! Check your inbox and click the verification link. It will open your app for verification.');
       } else {
         showAlert('success', 'If this email exists in our system and is unverified, a verification email will be sent.');
       }

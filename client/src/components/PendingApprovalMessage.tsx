@@ -3,6 +3,7 @@ import { Alert, Button, Spinner } from 'react-bootstrap';
 import { FaExclamationTriangle, FaEnvelope, FaClock, FaInfoCircle } from 'react-icons/fa';
 import { sendEmailVerification } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { sendCustomFirebaseVerification } from '../lib/firebaseEmailInterceptor';
 import { useQuery } from '@tanstack/react-query';
 
 interface PendingApprovalMessageProps {
@@ -26,11 +27,12 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
     
     setResendingVerification(true);
     try {
-      // Use Firebase's built-in email verification system
+      // Use Firebase's built-in system - the verification link will work with your verification page
       await sendEmailVerification(user);
+      
       setVerificationSent(true);
       setTimeout(() => setVerificationSent(false), 10000);
-      console.log('Firebase verification email sent with proper verification link');
+      console.log('Firebase verification email sent - links will work with your verification page');
     } catch (error: any) {
       console.error('Error sending verification email:', error);
     } finally {
@@ -145,7 +147,7 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
                 {verificationSent && (
                   <div className="text-success mt-2 small">
                     <FaInfoCircle className="me-1" />
-                    Verification email sent! Check your inbox and click the verification link.
+                    Verification email sent! Check your inbox and click the link to verify via your app.
                   </div>
                 )}
               </div>

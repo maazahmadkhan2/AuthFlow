@@ -7,7 +7,8 @@ This is a Firebase-only web application built with React and Node.js. The app us
   - Fixed email verification to use Firebase's built-in system for proper verification link handling
   - Enhanced pending approval interface with prominent resend verification functionality
   - Users in pending approval state now see clear email verification section with resend button
-  - Verification emails use Firebase's native system which works seamlessly with email verification page
+  - Verification emails use Firebase's native system which works seamlessly with custom email verification page
+  - Firebase verification links properly redirect to /email-verification page for in-app verification
   - SendGrid infrastructure remains available for future custom email notifications
 - **Added comprehensive email verification system (August 2025)**:
   - Created dedicated email verification page at /verify-email and /email-verification routes

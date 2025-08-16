@@ -16,10 +16,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Send verification email endpoint
+  // Send custom verification email with Firebase action code
   app.post('/api/send-verification-email', async (req, res) => {
     try {
-      const { userEmail, userName, actionCode, baseUrl } = req.body;
+      const { userEmail, userName, actionCode } = req.body;
 
       if (!userEmail || !actionCode) {
         return res.status(400).json({ 
@@ -27,11 +27,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Create custom verification URL pointing to your verification page
+      const customVerificationUrl = `${req.protocol}://${req.get('host')}/email-verification?mode=verifyEmail&oobCode=${actionCode}&continueUrl=${encodeURIComponent(`${req.protocol}://${req.get('host')}/auth`)}`;
+
       const success = await sendVerificationEmail({
         userEmail,
         userName: userName || 'User',
         actionCode,
-        baseUrl: baseUrl || `${req.protocol}://${req.get('host')}`
+        baseUrl: `${req.protocol}://${req.get('host')}`,
+        customVerificationUrl
       });
 
       if (success) {

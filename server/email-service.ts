@@ -23,6 +23,7 @@ export interface SendVerificationEmailParams {
   actionCode: string;
   baseUrl?: string;
   fromEmail?: string;
+  customVerificationUrl?: string;
 }
 
 /**
@@ -39,12 +40,13 @@ export const sendVerificationEmail = async (params: SendVerificationEmailParams)
     userName,
     actionCode,
     baseUrl = process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000',
-    fromEmail = 'khanmaaz22@gmail.com' // Verified SendGrid sender
+    fromEmail = 'khanmaaz22@gmail.com', // Verified SendGrid sender
+    customVerificationUrl
   } = params;
 
   try {
-    // Build the verification URL that points to your verification page
-    const verificationUrl = buildVerificationUrl(baseUrl, actionCode);
+    // Use custom verification URL if provided, otherwise build default
+    const verificationUrl = customVerificationUrl || buildVerificationUrl(baseUrl, actionCode);
 
     // Create email template data
     const emailData: EmailVerificationData = {
