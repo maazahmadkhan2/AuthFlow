@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { Container, Card, Alert, Spinner, Button } from 'react-bootstrap';
 import { auth } from '../lib/firebase';
 import { applyActionCode, checkActionCode, ActionCodeInfo } from 'firebase/auth';
+import { getUserData, updateUserData } from '../lib/firebase';
 
 interface EmailVerificationProps {
   // Component can be used for different verification scenarios
@@ -27,6 +28,33 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ mode = 'standalon
     return urlParams.get('mode');
   };
 
+  // Helper function to check if it's a custom SendGrid verification code
+  const isCustomVerificationCode = (code: string): boolean => {
+    try {
+      const decoded = atob(code);
+      return decoded.includes('_') && decoded.endsWith('_verify');
+    } catch {
+      return false;
+    }
+  };
+
+  // Helper function to parse custom verification code
+  const parseCustomVerificationCode = (code: string): { uid: string, timestamp: number } | null => {
+    try {
+      const decoded = atob(code);
+      const parts = decoded.split('_');
+      if (parts.length >= 3 && parts[2] === 'verify') {
+        return {
+          uid: parts[0],
+          timestamp: parseInt(parts[1], 10)
+        };
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
   useEffect(() => {
     const verifyEmail = async () => {
       const actionCode = getActionCodeFromUrl();
@@ -39,23 +67,63 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ mode = 'standalon
       }
 
       try {
-        // First, check the action code to get information about it
-        const info = await checkActionCode(auth, actionCode);
-        setActionInfo(info);
-
-        // Apply the action code to verify the email
-        await applyActionCode(auth, actionCode);
-
-        // Update verification state
-        setVerificationState('success');
-
-        // If user is logged in, we can update their profile
-        if (auth.currentUser) {
-          // Reload user to get updated email verification status
-          await auth.currentUser.reload();
+        // Check if it's a custom SendGrid verification code
+        if (isCustomVerificationCode(actionCode)) {
+          // Handle custom SendGrid verification code
+          const codeData = parseCustomVerificationCode(actionCode);
           
-          // Update user data in Firestore if needed
-          await updateUserVerificationStatus(auth.currentUser.uid);
+          if (!codeData) {
+            setVerificationState('invalid');
+            setErrorMessage('Invalid verification code format.');
+            return;
+          }
+
+          // Check if code is expired (24 hours)
+          const now = Date.now();
+          const codeAge = now - codeData.timestamp;
+          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+          
+          if (codeAge > maxAge) {
+            setVerificationState('error');
+            setErrorMessage('This verification link has expired. Please request a new verification email.');
+            return;
+          }
+
+          // Get user data from Firestore
+          const userData = await getUserData(codeData.uid);
+          if (!userData) {
+            setVerificationState('error');
+            setErrorMessage('User account not found.');
+            return;
+          }
+
+          // Update user verification status in Firestore
+          await updateUserData(codeData.uid, {
+            emailVerified: true,
+            verifiedAt: new Date().toISOString(),
+            lastUpdated: new Date().toISOString()
+          });
+
+          // Set success state with user info
+          setActionInfo({
+            data: { email: userData.email },
+            operation: 'EMAIL_SIGNIN'
+          } as ActionCodeInfo);
+          setVerificationState('success');
+          
+        } else {
+          // Handle Firebase action code (fallback)
+          const info = await checkActionCode(auth, actionCode);
+          setActionInfo(info);
+
+          await applyActionCode(auth, actionCode);
+          setVerificationState('success');
+
+          // If user is logged in, update their profile
+          if (auth.currentUser) {
+            await auth.currentUser.reload();
+            await updateUserVerificationStatus(auth.currentUser.uid);
+          }
         }
 
       } catch (error: any) {
@@ -113,10 +181,27 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ mode = 'standalon
 
   const handleRequestNewVerification = async () => {
     try {
-      const { sendEmailVerification } = await import('firebase/auth');
       if (auth.currentUser) {
-        await sendEmailVerification(auth.currentUser);
-        setErrorMessage('A new verification email has been sent to your email address.');
+        // Send verification email via SendGrid
+        const sendGridResponse = await fetch('/api/send-verification-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userEmail: auth.currentUser.email,
+            userName: auth.currentUser.displayName || 'User',
+            actionCode: btoa(`${auth.currentUser.uid}_${Date.now()}_verify`),
+            baseUrl: window.location.origin
+          })
+        });
+
+        if (sendGridResponse.ok) {
+          setErrorMessage('A new verification email has been sent to your email address.');
+        } else {
+          const errorText = await sendGridResponse.text();
+          setErrorMessage(`Failed to send verification email: ${errorText}`);
+        }
       } else {
         setErrorMessage('Please log in first to request a new verification email.');
       }
