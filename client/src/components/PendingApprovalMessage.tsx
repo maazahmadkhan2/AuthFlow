@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Button, Spinner } from 'react-bootstrap';
 import { FaExclamationTriangle, FaEnvelope, FaClock, FaInfoCircle } from 'react-icons/fa';
-import { sendEmailVerification } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { sendCustomFirebaseVerification } from '../lib/firebaseEmailInterceptor';
 import { useQuery } from '@tanstack/react-query';
 
 interface PendingApprovalMessageProps {
@@ -16,7 +14,7 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
   const [verificationSent, setVerificationSent] = useState(false);
 
   // Check user status in database
-  const { data: dbUser, isLoading } = useQuery({
+  const { data: dbUser, isLoading } = useQuery<any>({
     queryKey: [`/api/users/${user?.uid}`],
     enabled: !!user?.uid,
     retry: false,
@@ -27,14 +25,31 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
     
     setResendingVerification(true);
     try {
-      // Use Firebase's built-in system - the verification link will work with your verification page
-      await sendEmailVerification(user);
-      
-      setVerificationSent(true);
-      setTimeout(() => setVerificationSent(false), 10000);
-      console.log('Firebase verification email sent - links will work with your verification page');
+      // Send verification email via SendGrid exclusively
+      const sendGridResponse = await fetch('/api/send-verification-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userEmail: user.email,
+          userName: user.displayName || 'User',
+          actionCode: btoa(`${user.uid}_${Date.now()}_verify`),
+          baseUrl: window.location.origin
+        })
+      });
+
+      if (sendGridResponse.ok) {
+        setVerificationSent(true);
+        setTimeout(() => setVerificationSent(false), 10000);
+        console.log('Verification email sent via SendGrid');
+      } else {
+        const errorText = await sendGridResponse.text();
+        throw new Error(`SendGrid email failed: ${errorText}`);
+      }
     } catch (error: any) {
-      console.error('Error sending verification email:', error);
+      console.error('Error sending verification email via SendGrid:', error);
+      alert('Failed to send verification email. Please try again.');
     } finally {
       setResendingVerification(false);
     }
@@ -104,7 +119,7 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
     );
   }
 
-  if (dbUser.status === 'pending') {
+  if (dbUser?.status === 'pending') {
     return (
       <Alert variant="info" className="mb-4">
         <div className="d-flex align-items-start">
@@ -155,10 +170,10 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
             <div className="bg-light p-2 rounded">
               <small>
                 <strong>Account Details:</strong><br />
-                Name: {dbUser.displayName}<br />
-                Role: {dbUser.role}<br />
-                Status: {dbUser.status}<br />
-                Registration: {new Date(dbUser.createdAt).toLocaleDateString()}
+                Name: {dbUser?.displayName}<br />
+                Role: {dbUser?.role}<br />
+                Status: {dbUser?.status}<br />
+                Registration: {dbUser?.createdAt ? new Date(dbUser.createdAt).toLocaleDateString() : 'N/A'}
               </small>
             </div>
           </div>
@@ -167,14 +182,14 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
     );
   }
 
-  if (dbUser.status === 'rejected') {
+  if (dbUser?.status === 'rejected') {
     return (
       <Alert variant="danger">
         <FaExclamationTriangle className="me-2" />
         <strong>Account Rejected</strong>
         <br />
         Your account application was not approved. 
-        {dbUser.rejectionReason && (
+        {dbUser?.rejectionReason && (
           <div className="mt-2">
             <strong>Reason:</strong> {dbUser.rejectionReason}
           </div>
@@ -184,7 +199,7 @@ export const PendingApprovalMessage: React.FC<PendingApprovalMessageProps> = ({ 
     );
   }
 
-  if (dbUser.status === 'inactive') {
+  if (dbUser?.status === 'inactive') {
     return (
       <Alert variant="warning">
         <FaExclamationTriangle className="me-2" />
